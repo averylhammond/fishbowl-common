@@ -1,5 +1,9 @@
 # fishbowl-common
 
+[![Unit Tests](https://github.com/averylhammond/fishbowl-common/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/averylhammond/fishbowl-common/actions/workflows/unit-tests.yml)
+[![Code Coverage](https://github.com/averylhammond/fishbowl-common/actions/workflows/code-coverage.yml/badge.svg)](https://github.com/averylhammond/fishbowl-common/actions/workflows/code-coverage.yml)
+[![codecov](https://codecov.io/gh/averylhammond/fishbowl-common/branch/main/graph/badge.svg)](https://codecov.io/gh/averylhammond/fishbowl-common)
+
 Shared infrastructure classes for the Fishbowl desktop tools
 ([FishbowlInvoiceTool](https://github.com/averylhammond/FishbowlInvoiceTool),
 [FishbowlInventoryTool](https://github.com/averylhammond/FishbowlInventoryTool)). These
@@ -51,4 +55,18 @@ python -m venv venv
 source venv/Scripts/activate   # Windows; use venv/bin/activate on Linux/Mac
 pip install -e ".[dev]"
 pytest tests/*
+```
+
+### Continuous integration
+
+Every pull request to `main` must pass two checks (see the badges above):
+
+- **Unit Tests** — the full `pytest` suite.
+- **Code Coverage** — the suite run under coverage, which fails if total coverage
+  drops below **80%**.
+
+Reproduce the coverage check locally with:
+
+```bash
+pytest --cov=fishbowl_common --cov-report=term-missing --cov-fail-under=80
 ```
