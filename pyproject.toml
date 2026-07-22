@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fishbowl-common"
+version = "0.1.0"
+description = "Shared infrastructure classes for the Fishbowl desktop tools (update check, CLI args, settings persistence)."
+requires-python = ">=3.11"
+# No runtime dependencies: every class relies only on the Python standard library.
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.4.1",
+    "pytest-cov==7.0.0",
+]
+
+[tool.setuptools]
+packages = ["fishbowl_common"]
+
+[tool.pytest.ini_options]
+# This project names its test files "*_tests.py" rather than pytest's default
+# "test_*.py", so widen discovery to match them.
+python_files = ["*_tests.py"]
+testpaths = ["tests"]
