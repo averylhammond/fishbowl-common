@@ -1,14 +1,15 @@
 # fishbowl-common
 
-[![Unit Tests](https://github.com/averylhammond/fishbowl-common/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/averylhammond/fishbowl-common/actions/workflows/unit-tests.yml)
-[![Code Coverage](https://github.com/averylhammond/fishbowl-common/actions/workflows/code-coverage.yml/badge.svg)](https://github.com/averylhammond/fishbowl-common/actions/workflows/code-coverage.yml)
+[![Unit Tests](https://github.com/averylhammond/fishbowl-common/actions/workflows/unit-tests.yml/badge.svg?branch=main)](https://github.com/averylhammond/fishbowl-common/actions/workflows/unit-tests.yml)
+[![Code Coverage](https://github.com/averylhammond/fishbowl-common/actions/workflows/code-coverage.yml/badge.svg?branch=main)](https://github.com/averylhammond/fishbowl-common/actions/workflows/code-coverage.yml)
 [![codecov](https://codecov.io/gh/averylhammond/fishbowl-common/branch/main/graph/badge.svg)](https://codecov.io/gh/averylhammond/fishbowl-common)
 
 Shared infrastructure classes for the Fishbowl desktop tools
 ([FishbowlInvoiceTool](https://github.com/averylhammond/FishbowlInvoiceTool),
 [FishbowlInventoryTool](https://github.com/averylhammond/FishbowlInventoryTool)). These
 classes are application-agnostic — anything app-specific (paths, versions, repo names)
-is injected by the consumer.
+is injected by the consumer. The package has no runtime dependencies beyond the standard
+library.
 
 ## Contents
 
@@ -20,12 +21,20 @@ is injected by the consumer.
   it against the running version. The current version and `owner/repo` are injected by
   the caller; the check fails silently (returns `None`) on any network/parse error.
 
-## Install
+## Setup
 
 Add a pinned git dependency to the consuming app's requirements:
 
 ```
-fishbowl-common @ git+ssh://git@github.com/averylhammond/fishbowl-common.git@v0.1.0
+fishbowl-common @ git+https://github.com/averylhammond/fishbowl-common.git@v0.1.0
+```
+
+To work on the package itself (Python 3.11):
+
+```bash
+python -m venv venv
+source venv/Scripts/activate   # Windows; use venv/bin/activate on Linux/Mac
+pip install -e ".[dev]"
 ```
 
 ## Usage
@@ -48,25 +57,35 @@ if result and result.update_available:
     ...
 ```
 
-## Development
+## Testing
 
 ```bash
-python -m venv venv
-source venv/Scripts/activate   # Windows; use venv/bin/activate on Linux/Mac
-pip install -e ".[dev]"
-pytest tests/*
+pytest tests/*                                                        # unit tests
+pytest --cov=fishbowl_common --cov-report=term-missing tests/*        # with a coverage table
 ```
 
-### Continuous integration
+Test files use the `*_tests.py` suffix; `pyproject.toml` widens pytest discovery to match
+them, so a bare `pytest` works here too.
 
-Every pull request to `main` must pass two checks (see the badges above):
+## Continuous integration
 
-- **Unit Tests** — the full `pytest` suite.
-- **Code Coverage** — the suite run under coverage, which fails if total coverage
-  drops below **80%**.
+Both workflows run on pull requests to `main` and on manual dispatch.
 
-Reproduce the coverage check locally with:
+| Workflow | What it checks |
+| --- | --- |
+| [Unit Tests](.github/workflows/unit-tests.yml) | The full `pytest` suite on `ubuntu-latest`. |
+| [Code Coverage](.github/workflows/code-coverage.yml) | `pytest --cov=fishbowl_common --cov-report=xml --cov-report=term --cov-fail-under=80`, uploaded to Codecov. |
 
-```bash
-pytest --cov=fishbowl_common --cov-report=term-missing --cov-fail-under=80
-```
+## Releases
+
+The package version lives in `pyproject.toml` and is published by tag. Consumers pin a
+tag in their requirements (see [Setup](#setup)), so bumping the version here has no
+effect on an app until that app's pin is moved to the new tag.
+
+## Related projects
+
+- [FishbowlInvoiceTool](https://github.com/averylhammond/FishbowlInvoiceTool) — parses
+  Fishbowl invoice PDFs and computes cost breakdowns. Uses all three classes.
+- [FishbowlInventoryTool](https://github.com/averylhammond/FishbowlInventoryTool) —
+  parses Fishbowl inventory availability and turnover report PDFs into an Excel report.
+  Uses `ArgumentProvider`.
