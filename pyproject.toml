@@ -4,23 +4,36 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fishbowl-common"
-version = "0.1.0"
-description = "Shared infrastructure classes for the Fishbowl desktop tools (update check, CLI args, settings persistence)."
+version = "1.0.1"
+description = "Shared infrastructure and GUI classes for the Fishbowl desktop tools (update check, CLI args, settings persistence, themed tkinter windows)."
 requires-python = ">=3.11"
 # No runtime dependencies: every class relies only on the Python standard library.
 dependencies = []
 
 [project.optional-dependencies]
+# The GUI subpackage needs only tkinter, which ships with CPython, so this extra
+# adds no requirements. It exists to mark intent: fishbowl_common itself must stay
+# importable with no tkinter present, so a consumer that runs headless installs the
+# package without it.
+gui = []
 dev = [
     "pytest==8.4.1",
     "pytest-cov==7.0.0",
 ]
 
 [tool.setuptools]
-packages = ["fishbowl_common"]
+packages = ["fishbowl_common", "fishbowl_common.gui"]
 
 [tool.pytest.ini_options]
 # This project names its test files "*_tests.py" rather than pytest's default
 # "test_*.py", so widen discovery to match them.
 python_files = ["*_tests.py"]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+# color_theme and font_settings are inert styling data with no behavior to test,
+# so measuring them would only dilute the percentage.
+omit = [
+    "fishbowl_common/gui/color_theme.py",
+    "fishbowl_common/gui/font_settings.py",
+]
