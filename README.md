@@ -25,6 +25,11 @@ declared behind a [`[gui]` extra](#setup).
 - **`UpdateChecker`** — queries the GitHub releases API for a newer version and compares
   it against the running version. The current version and `owner/repo` are injected by
   the caller; the check fails silently (returns `None`) on any network/parse error.
+- **`UpdateCoordinator`** — runs an `UpdateChecker` on a daemon thread and turns its
+  outcome into the right user-facing response: the update window whenever a newer
+  release exists, and an up-to-date/failure popup only when the user asked for the
+  check. The window it presents through is typed as a `Protocol`, so this stays in the
+  headless half even though the collaborator is a tkinter window.
 
 ### `fishbowl_common.gui`
 
@@ -55,7 +60,7 @@ font when it opens, so it stays styled consistently with the main window behind 
 Add a pinned git dependency to the consuming app's requirements:
 
 ```
-fishbowl-common[gui] @ git+https://github.com/averylhammond/fishbowl-common.git@v1.0.1
+fishbowl-common[gui] @ git+https://github.com/averylhammond/fishbowl-common.git@v1.1.0
 ```
 
 Drop the `[gui]` to install only the headless half. The extra pulls in no packages —
@@ -89,6 +94,23 @@ result = UpdateChecker(
 ).check_for_update()
 if result and result.update_available:
     ...
+```
+
+Most consumers want the whole update flow rather than the bare fetch, which is what
+`UpdateCoordinator` wraps. It never blocks the caller and never touches the display off
+the GUI thread:
+
+```python
+from fishbowl_common import UpdateCoordinator
+
+coordinator = UpdateCoordinator(
+    current_version="1.2.3",
+    repo="averylhammond/FishbowlInvoiceTool",
+    display=self,  # any object with after()/show_update_available()/show_popup()
+)
+
+coordinator.start()               # silent startup check
+coordinator.start(manual=True)    # Help -> Check for Updates; always reports an outcome
 ```
 
 The GUI half is imported separately, so a headless code path never loads tkinter:

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fishbowl-common"
-version = "1.0.1"
+version = "1.1.0"
 description = "Shared infrastructure and GUI classes for the Fishbowl desktop tools (update check, CLI args, settings persistence, themed tkinter windows)."
 requires-python = ">=3.11"
 # No runtime dependencies: every class relies only on the Python standard library.
