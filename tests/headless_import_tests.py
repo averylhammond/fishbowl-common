@@ -57,7 +57,7 @@ def _reimport_without_tkinter(module_name: str):
 def test_top_level_package_imports_without_tkinter():
     """
     Verifies that the top-level package imports on a machine with no tkinter, and
-    that all four infrastructure classes are still reachable from it. A consuming
+    that every infrastructure class is still reachable from it. A consuming
     application's integration test runs headless on a machine with no display, so
     pulling tkinter in from fishbowl_common/__init__.py would break it.
     """
@@ -67,6 +67,11 @@ def test_top_level_package_imports_without_tkinter():
     assert module.ArgumentProvider is not None
     assert module.SettingsRepository is not None
     assert module.UpdateChecker is not None
+
+    # The download and install halves of the update flow reach only urllib,
+    # hashlib and subprocess, so they belong on this side of the split too
+    assert module.UpdateDownloader is not None
+    assert module.UpdateInstaller is not None
 
     # UpdateCoordinator drives a GUI window but is typed against a Protocol, so
     # it belongs to this half of the package rather than the tkinter half

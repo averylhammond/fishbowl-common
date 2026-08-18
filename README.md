@@ -23,13 +23,26 @@ declared behind a [`[gui]` extra](#setup).
 - **`SettingsRepository`** — a SQLite key/value store for user settings (theme, font,
   etc.) that survive between runs. The database path is injected by the caller.
 - **`UpdateChecker`** — queries the GitHub releases API for a newer version and compares
-  it against the running version. The current version and `owner/repo` are injected by
-  the caller; the check fails silently (returns `None`) on any network/parse error.
+  it against the running version, also surfacing the release's installer and checksums
+  assets. The current version, `owner/repo` and the installer's `asset_pattern` are
+  injected by the caller; the check fails silently (returns `None`) on any network/parse
+  error.
+- **`UpdateDownloader`** — downloads a release asset in chunks, reporting progress as it
+  goes, and verifies it against the size and SHA-256 the release published before the
+  caller ever executes it. A failed download, a wrong size or a wrong digest all return
+  `None`, and the partial file is deleted.
+- **`UpdateInstaller`** — starts a downloaded Inno Setup installer silently and detached,
+  passing `/RELAUNCH=1` so the application comes back after the upgrade. Detaching is
+  what lets the installer outlive the application it is replacing, whose executable
+  Windows keeps file-locked while it runs.
 - **`UpdateCoordinator`** — runs an `UpdateChecker` on a daemon thread and turns its
   outcome into the right user-facing response: the update window whenever a newer
   release exists, and an up-to-date/failure popup only when the user asked for the
-  check. The window it presents through is typed as a `Protocol`, so this stays in the
-  headless half even though the collaborator is a tkinter window.
+  check. When the release publishes an installer this platform can run, it also owns the
+  download-and-install flow — again off the GUI thread, with progress and the outcome
+  marshalled back through the window's `after()`. The window it presents through is typed
+  as a `Protocol`, so this stays in the headless half even though the collaborator is a
+  tkinter window.
 
 ### `fishbowl_common.gui`
 
@@ -49,9 +62,11 @@ font when it opens, so it stays styled consistently with the main window behind 
   injected by the caller.
 - **`FileEditorWindow`** — views or edits one text file in a monospace box; an `editable`
   flag toggles the Save button.
-- **`UpdateWindow`** — announces a newer release and opens its download page, then closes
-  the application through an injected callback so an installer is not blocked by the
-  running executable.
+- **`UpdateWindow`** — announces a newer release and offers the ways to get it: "Update
+  and Restart" (with a themed progress bar) when the caller passes an install callback,
+  and always "Exit and Update", which opens the release's download page. Either way it
+  closes the application through an injected callback, so an installer is not blocked by
+  the running executable; a failed automatic update falls back to the download page.
 - **`Tooltip`** — hover text for a single widget, shown after a short delay so a pointer
   merely crossing the widget never flashes a tip.
 
@@ -60,7 +75,7 @@ font when it opens, so it stays styled consistently with the main window behind 
 Add a pinned git dependency to the consuming app's requirements:
 
 ```
-fishbowl-common[gui] @ git+https://github.com/averylhammond/fishbowl-common.git@v1.1.0
+fishbowl-common[gui] @ git+https://github.com/averylhammond/fishbowl-common.git@v1.2.0
 ```
 
 Drop the `[gui]` to install only the headless half. The extra pulls in no packages —
@@ -107,11 +122,19 @@ coordinator = UpdateCoordinator(
     current_version="1.2.3",
     repo="averylhammond/FishbowlInvoiceTool",
     display=self,  # any object with after()/show_update_available()/show_popup()
+    asset_pattern="FishbowlInvoiceTool_Setup.exe",  # omit for the manual download only
 )
 
 coordinator.start()               # silent startup check
 coordinator.start(manual=True)    # Help -> Check for Updates; always reports an outcome
 ```
+
+Passing an `asset_pattern` is what turns on the in-app "Update and Restart" button. It
+needs two things from the release: the installer the pattern names, and a
+`SHA256SUMS.txt` asset listing that installer's digest — the download is verified against
+it before anything is executed. A release missing either, or a platform that is not
+Windows, quietly leaves the window offering the manual download instead, so nothing
+breaks on an older release.
 
 The GUI half is imported separately, so a headless code path never loads tkinter:
 
@@ -160,7 +183,7 @@ effect on an app until that app's pin is moved to the new tag.
 ## Related projects
 
 - [FishbowlInvoiceTool](https://github.com/averylhammond/FishbowlInvoiceTool) — parses
-  Fishbowl invoice PDFs and computes cost breakdowns. Uses all three classes.
+  Fishbowl invoice PDFs and computes cost breakdowns. Uses the whole package.
 - [FishbowlInventoryTool](https://github.com/averylhammond/FishbowlInventoryTool) —
   parses Fishbowl inventory availability and turnover report PDFs into an Excel report.
-  Uses all three classes.
+  Uses the whole package.
