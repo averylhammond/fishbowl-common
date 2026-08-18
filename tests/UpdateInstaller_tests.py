@@ -204,3 +204,101 @@ def test_launch_returns_false_when_the_installer_cannot_be_started(
     mock_popen.side_effect = OSError("not executable")
 
     assert installer.launch(_INSTALLER) is False
+
+
+###############################################################################
+###          Tests UpdateInstaller -> launch() -> silent switches           ###
+###############################################################################
+@patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
+def test_launch_lets_the_installer_force_close_the_application(mock_popen, installer):
+    """
+    Verifies that the installer is allowed to terminate an application that will not
+    close gracefully. Restart Manager closes an application by posting to its window,
+    and a PyInstaller onefile build's bootloader owns none, so it never answers;
+    without this switch Setup waits out its timeout and /SUPPRESSMSGBOXES turns the
+    resulting prompt into an Abort, rolling the whole upgrade back.
+
+    Args:
+        mock_popen (unittest.mock.MagicMock): Mocks subprocess.Popen
+        installer (pytest.fixture): Provides the installer under test
+    """
+
+    installer.launch(_INSTALLER)
+
+    command = mock_popen.call_args.args[0]
+    assert "/CLOSEAPPLICATIONS" in command
+    assert "/FORCECLOSEAPPLICATIONS" in command
+
+
+###############################################################################
+###           Tests UpdateInstaller -> launch() -> environment              ###
+###############################################################################
+@patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
+def test_launch_strips_the_pyinstaller_variables_from_the_environment(
+    mock_popen, installer
+):
+    """
+    Verifies that the bootloader's variables are kept out of the environment the
+    installer is started with. A frozen application hands its whole environment to a
+    child process and the installer hands it on to the application it relaunches,
+    which since PyInstaller 6.22.1 refuses to start when it sees them.
+
+    Args:
+        mock_popen (unittest.mock.MagicMock): Mocks subprocess.Popen
+        installer (pytest.fixture): Provides the installer under test
+    """
+
+    frozen = {
+        "_PYI_ARCHIVE_FILE": r"C:\App\App.exe",
+        "_PYI_APPLICATION_HOME_DIR": r"C:\Temp\_MEI123",
+        "_PYI_PARENT_PROCESS_LEVEL": "1",
+        "_MEIPASS2": r"C:\Temp\_MEI123",
+    }
+
+    with patch.dict("fishbowl_common.UpdateInstaller.os.environ", frozen):
+        installer.launch(_INSTALLER)
+
+    environment = mock_popen.call_args.kwargs["env"]
+    assert not [name for name in environment if name.startswith("_PYI_")]
+    assert "_MEIPASS2" not in environment
+
+
+@patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
+def test_launch_passes_the_rest_of_the_environment_through(mock_popen, installer):
+    """
+    Verifies that everything other than the bootloader's own variables survives. The
+    installer is entitled to the user's real environment; only the frozen
+    application's internals have no business reaching it.
+
+    Args:
+        mock_popen (unittest.mock.MagicMock): Mocks subprocess.Popen
+        installer (pytest.fixture): Provides the installer under test
+    """
+
+    with patch.dict(
+        "fishbowl_common.UpdateInstaller.os.environ",
+        {"_PYI_ARCHIVE_FILE": r"C:\App\App.exe", "TEMP": r"C:\Temp"},
+    ):
+        installer.launch(_INSTALLER)
+
+    assert mock_popen.call_args.kwargs["env"]["TEMP"] == r"C:\Temp"
+
+
+@patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
+def test_launch_passes_an_environment_even_with_nothing_to_strip(mock_popen, installer):
+    """
+    Verifies that an environment is always supplied explicitly rather than left to be
+    inherited, so an unfrozen run (a developer running from source) takes the same
+    code path as a frozen one and the stripping is never silently skipped.
+
+    Args:
+        mock_popen (unittest.mock.MagicMock): Mocks subprocess.Popen
+        installer (pytest.fixture): Provides the installer under test
+    """
+
+    with patch.dict(
+        "fishbowl_common.UpdateInstaller.os.environ", {"TEMP": r"C:\Temp"}, clear=True
+    ):
+        installer.launch(_INSTALLER)
+
+    assert mock_popen.call_args.kwargs["env"] == {"TEMP": r"C:\Temp"}

@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -6,15 +7,35 @@ from pathlib import Path
 # /VERYSILENT and /SUPPRESSMSGBOXES run it with no window and no prompts;
 # /NORESTART forbids it rebooting the machine; /CLOSEAPPLICATIONS lets Restart
 # Manager close the application if it is still holding its executable open when the
-# installer reaches it; /NORESTARTAPPLICATIONS stops Restart Manager relaunching
-# what it closed, since the relaunch below is the one that must happen.
+# installer reaches it; /FORCECLOSEAPPLICATIONS lets it terminate what will not
+# close gracefully; /NORESTARTAPPLICATIONS stops Restart Manager relaunching what it
+# closed, since the relaunch below is the one that must happen.
+#
+# /FORCECLOSEAPPLICATIONS is not belt and braces. Restart Manager asks an
+# application to close by posting to its window, and a PyInstaller onefile build runs
+# as two processes whose bootloader owns no window: it never answers, Setup waits out
+# its 30-second timeout, and /SUPPRESSMSGBOXES turns the resulting Abort/Retry/Ignore
+# prompt into an Abort. The upgrade then rolls back silently, leaving the user on the
+# old version with nothing to show for it.
 SILENT_ARGS = (
     "/VERYSILENT",
     "/SUPPRESSMSGBOXES",
     "/NORESTART",
     "/CLOSEAPPLICATIONS",
+    "/FORCECLOSEAPPLICATIONS",
     "/NORESTARTAPPLICATIONS",
 )
+
+# Environment variables PyInstaller's bootloader exports to describe the running
+# application's extracted bundle, stripped from what the installer is started with.
+# A frozen application passes its whole environment to any child process, and the
+# installer passes that on again to the application it relaunches -- which, since
+# PyInstaller 6.22.1, refuses to start when it sees them: it takes them to mean it is
+# a worker sub-process of a onefile parent and requires its parent process to be the
+# same executable, and its parent is the installer. An in-place upgrade leaves the
+# path unchanged, so nothing else marks the relaunch as a fresh start.
+PYINSTALLER_ENV_PREFIX = "_PYI_"
+PYINSTALLER_LEGACY_ENV_VARS = ("_MEIPASS2",)
 
 # Switch asking the installer to start the application again once the upgrade is
 # finished. A silent install would otherwise leave the user with no window at all,
@@ -77,6 +98,7 @@ class UpdateInstaller:
                 command,
                 creationflags=self._detached_flags(),
                 close_fds=True,
+                env=self._clean_environment(),
             )
         except OSError:
             # A missing, unreadable or non-executable installer: report the failure
@@ -104,3 +126,26 @@ class UpdateInstaller:
         return getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(
             subprocess, "CREATE_NEW_PROCESS_GROUP", 0
         )
+
+    ###########################################################################
+    ###              UpdateInstaller -> _clean_environment()               ###
+    ###########################################################################
+    def _clean_environment(self) -> dict:
+        """
+        Builds the environment to start the installer with: this process's own,
+        less the variables PyInstaller's bootloader exported into it.
+
+        Everything else is passed through untouched, since the installer is
+        entitled to the user's real environment -- only the frozen application's
+        internals have no business reaching it.
+
+        Returns:
+            dict: The environment to hand Popen.
+        """
+
+        return {
+            name: value
+            for name, value in os.environ.items()
+            if not name.startswith(PYINSTALLER_ENV_PREFIX)
+            and name not in PYINSTALLER_LEGACY_ENV_VARS
+        }

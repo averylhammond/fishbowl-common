@@ -34,7 +34,20 @@ declared behind a [`[gui]` extra](#setup).
 - **`UpdateInstaller`** — starts a downloaded Inno Setup installer silently and detached,
   passing `/RELAUNCH=1` so the application comes back after the upgrade. Detaching is
   what lets the installer outlive the application it is replacing, whose executable
-  Windows keeps file-locked while it runs.
+  Windows keeps file-locked while it runs. Two of its switches and one of its habits
+  exist because a frozen application is not an ordinary parent process:
+  `/FORCECLOSEAPPLICATIONS` alongside `/CLOSEAPPLICATIONS`, because Restart Manager
+  closes an application by posting to its window and a PyInstaller onefile bootloader
+  owns none — without it Setup waits out its timeout and `/SUPPRESSMSGBOXES` turns the
+  resulting prompt into an Abort, rolling the upgrade back silently. And the installer is
+  started with the bootloader's own `_PYI_*` variables stripped from the environment,
+  since it passes that environment on to the application it relaunches, which since
+  PyInstaller 6.22.1 refuses to start when it sees them (it takes them to mean it is a
+  worker sub-process and requires its parent to be the same executable).
+
+  A consuming application's `installer.iss` still needs its own half of this — the
+  `/RELAUNCH=1` gate, and `CloseApplications=force` so an upgrade launched by an older
+  build is covered too.
 - **`UpdateCoordinator`** — runs an `UpdateChecker` on a daemon thread and turns its
   outcome into the right user-facing response: the update window whenever a newer
   release exists, and an up-to-date/failure popup only when the user asked for the
@@ -75,7 +88,7 @@ font when it opens, so it stays styled consistently with the main window behind 
 Add a pinned git dependency to the consuming app's requirements:
 
 ```
-fishbowl-common[gui] @ git+https://github.com/averylhammond/fishbowl-common.git@v1.2.0
+fishbowl-common[gui] @ git+https://github.com/averylhammond/fishbowl-common.git@v1.2.1
 ```
 
 Drop the `[gui]` to install only the headless half. The extra pulls in no packages —
