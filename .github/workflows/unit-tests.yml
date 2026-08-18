@@ -22,11 +22,11 @@ jobs:
       with:
         python-version: "3.11.9"
 
-    # Install the package and its development dependencies
+    # Install the package (including the GUI subpackage) and its development dependencies
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e ".[dev]"
+        pip install -e ".[dev,gui]"
 
     # Run unit tests with pytest (discovery is configured in pyproject.toml)
     - name: Run tests

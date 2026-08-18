@@ -4,12 +4,17 @@
 [![Code Coverage](https://github.com/averylhammond/fishbowl-common/actions/workflows/code-coverage.yml/badge.svg?branch=main)](https://github.com/averylhammond/fishbowl-common/actions/workflows/code-coverage.yml)
 [![codecov](https://codecov.io/gh/averylhammond/fishbowl-common/branch/main/graph/badge.svg)](https://codecov.io/gh/averylhammond/fishbowl-common)
 
-Shared infrastructure classes for the Fishbowl desktop tools
+Shared infrastructure and GUI classes for the Fishbowl desktop tools
 ([FishbowlInvoiceTool](https://github.com/averylhammond/FishbowlInvoiceTool),
 [FishbowlInventoryTool](https://github.com/averylhammond/FishbowlInventoryTool)). These
-classes are application-agnostic — anything app-specific (paths, versions, repo names)
-is injected by the consumer. The package has no runtime dependencies beyond the standard
-library.
+classes are application-agnostic — anything app-specific (paths, versions, repo names,
+the application's own name) is injected by the consumer. The package has no runtime
+dependencies beyond the standard library.
+
+The package is split in two halves. `fishbowl_common` itself is headless: it imports
+nothing but the standard library, so an app can use it from an integration test running
+on a machine with no display. `fishbowl_common.gui` holds the tkinter windows and is
+declared behind a [`[gui]` extra](#setup).
 
 ## Contents
 
@@ -21,20 +26,49 @@ library.
   it against the running version. The current version and `owner/repo` are injected by
   the caller; the check fails silently (returns `None`) on any network/parse error.
 
+### `fishbowl_common.gui`
+
+The themed tkinter layer both apps share. Every window snapshots the active theme and
+font when it opens, so it stays styled consistently with the main window behind it.
+
+- **`color_theme`** — the `Theme` dataclass, the four built-in themes (`DARK`, `LIGHT`,
+  `OCEAN`, `FOREST`), `ALL_THEMES`, `THEME_BY_NAME`, and the named color palette.
+- **`font_settings`** — the selectable font families and sizes, plus the defaults and
+  the monospace family used where character alignment matters.
+- **`ThemedSubwindow`** — base class for the transient secondary windows below: attaches
+  to the parent, snapshots theme/font, sets the title and background, and centers itself
+  over the parent.
+- **`MessageWindow`** — the themed OK-button popup an app shows in place of
+  `tkinter.messagebox`.
+- **`AboutWindow`** — a read-only window showing the application name and version, both
+  injected by the caller.
+- **`FileEditorWindow`** — views or edits one text file in a monospace box; an `editable`
+  flag toggles the Save button.
+- **`UpdateWindow`** — announces a newer release and opens its download page, then closes
+  the application through an injected callback so an installer is not blocked by the
+  running executable.
+- **`Tooltip`** — hover text for a single widget, shown after a short delay so a pointer
+  merely crossing the widget never flashes a tip.
+
 ## Setup
 
 Add a pinned git dependency to the consuming app's requirements:
 
 ```
-fishbowl-common @ git+https://github.com/averylhammond/fishbowl-common.git@v0.1.0
+fishbowl-common[gui] @ git+https://github.com/averylhammond/fishbowl-common.git@v1.0.1
 ```
+
+Drop the `[gui]` to install only the headless half. The extra pulls in no packages —
+tkinter ships with CPython — so it is a declaration of intent rather than a dependency:
+`import fishbowl_common` must keep working on a machine with no Tcl/Tk, and
+`tests/headless_import_tests.py` fails the build if that ever stops being true.
 
 To work on the package itself (Python 3.11):
 
 ```bash
 python -m venv venv
 source venv/Scripts/activate   # Windows; use venv/bin/activate on Linux/Mac
-pip install -e ".[dev]"
+pip install -e ".[dev,gui]"
 ```
 
 ## Usage
@@ -57,15 +91,34 @@ if result and result.update_available:
     ...
 ```
 
+The GUI half is imported separately, so a headless code path never loads tkinter:
+
+```python
+from fishbowl_common.gui import AboutWindow, DARK, DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
+
+AboutWindow(
+    parent=self,
+    title="About",
+    app_name="Fishbowl Invoice Tool",
+    version="1.2.3",
+    theme=DARK,
+    font_family=DEFAULT_FONT_FAMILY,
+    font_size=DEFAULT_FONT_SIZE,
+)
+```
+
 ## Testing
 
 ```bash
-pytest tests/*                                                        # unit tests
-pytest --cov=fishbowl_common --cov-report=term-missing tests/*        # with a coverage table
+pytest                                                        # unit tests
+pytest --cov=fishbowl_common --cov-report=term-missing        # with a coverage table
 ```
 
 Test files use the `*_tests.py` suffix; `pyproject.toml` widens pytest discovery to match
-them, so a bare `pytest` works here too.
+them and points it at `tests/`, so a bare `pytest` finds everything — including the GUI
+tests under `tests/gui/`. Those never open a window: each one patches
+`tk.Toplevel.__init__` and every widget class, so the suite runs on a machine with no
+display. `color_theme` and `font_settings` are excluded from coverage as inert data.
 
 ## Continuous integration
 
@@ -88,4 +141,4 @@ effect on an app until that app's pin is moved to the new tag.
   Fishbowl invoice PDFs and computes cost breakdowns. Uses all three classes.
 - [FishbowlInventoryTool](https://github.com/averylhammond/FishbowlInventoryTool) —
   parses Fishbowl inventory availability and turnover report PDFs into an Excel report.
-  Uses `ArgumentProvider`.
+  Uses all three classes.
