@@ -2,7 +2,11 @@ import json
 import urllib.error
 from unittest.mock import patch, MagicMock
 
-from fishbowl_common.UpdateChecker import UpdateChecker, REQUEST_TIMEOUT_SECONDS
+from fishbowl_common.UpdateChecker import (
+    UpdateChecker,
+    DEFAULT_CHECKSUMS_NAME,
+    REQUEST_TIMEOUT_SECONDS,
+)
 
 # Repository used to construct the checker under test. Any "owner/name" value works;
 # the checker derives its GitHub API URL from it.
@@ -12,7 +16,11 @@ _TEST_REPO = "owner/repo"
 ###############################################################################
 ###                     UpdateChecker -> Test Helpers                       ###
 ###############################################################################
-def _release_response(tag_name: str, html_url: str = "https://example.com/release"):
+def _release_response(
+    tag_name: str,
+    html_url: str = "https://example.com/release",
+    assets: list | None = None,
+):
     """
     Builds a mock object mimicking the context manager returned by
     urllib.request.urlopen, whose read() yields a GitHub releases API JSON body.
@@ -20,13 +28,20 @@ def _release_response(tag_name: str, html_url: str = "https://example.com/releas
     Args:
         tag_name (str): The release tag to embed under "tag_name".
         html_url (str): The release page URL to embed under "html_url".
+        assets (list | None): The published files to embed under "assets", each
+            shaped like the API's asset objects; None omits the key entirely, as an
+            unexpected response shape would.
 
     Returns:
         unittest.mock.MagicMock: A mock suitable as urlopen's return value, usable
             in a `with` statement.
     """
 
-    body = json.dumps({"tag_name": tag_name, "html_url": html_url}).encode()
+    release = {"tag_name": tag_name, "html_url": html_url}
+    if assets is not None:
+        release["assets"] = assets
+
+    body = json.dumps(release).encode()
 
     mock_response = MagicMock()
     mock_response.read.return_value = body
@@ -35,6 +50,26 @@ def _release_response(tag_name: str, html_url: str = "https://example.com/releas
     mock_context = MagicMock()
     mock_context.__enter__.return_value = mock_response
     return mock_context
+
+
+def _asset(name: str, size: int = 1024):
+    """
+    Builds one entry of a release's "assets" array, shaped like the GitHub API's
+    asset objects.
+
+    Args:
+        name (str): The asset's published filename.
+        size (int): The asset's size in bytes.
+
+    Returns:
+        dict: The asset object to embed in a release response.
+    """
+
+    return {
+        "name": name,
+        "browser_download_url": f"https://example.com/{name}",
+        "size": size,
+    }
 
 
 ###############################################################################
@@ -203,3 +238,146 @@ def test_check_for_update_returns_none_on_malformed_response(mock_urlopen):
     ).check_for_update()
 
     assert result is None
+
+
+###############################################################################
+###              Tests UpdateChecker -> release asset lookup                ###
+###############################################################################
+@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+def test_check_for_update_surfaces_the_installer_and_checksums_assets(mock_urlopen):
+    """
+    Verifies that the release's installer (matched against the injected pattern) and
+    its checksums file are both surfaced from the same request, so an application
+    that installs the update itself needs no second call.
+
+    Args:
+        mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
+    """
+
+    mock_urlopen.return_value = _release_response(
+        "v3.2.0",
+        assets=[
+            _asset("App.zip"),
+            _asset("App_Setup.exe", size=4096),
+            _asset(DEFAULT_CHECKSUMS_NAME, size=128),
+        ],
+    )
+
+    result = UpdateChecker(
+        current_version="3.1.2", repo=_TEST_REPO, asset_pattern="App_Setup.exe"
+    ).check_for_update()
+
+    assert result.installer_asset.name == "App_Setup.exe"
+    assert result.installer_asset.download_url == "https://example.com/App_Setup.exe"
+    assert result.installer_asset.size == 4096
+    assert result.checksums_asset.name == DEFAULT_CHECKSUMS_NAME
+
+
+@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+def test_check_for_update_matches_the_installer_by_glob_pattern(mock_urlopen):
+    """
+    Verifies that the asset pattern is matched with fnmatch rather than by equality,
+    so a consumer can name its installer by shape when the filename carries the
+    version or another varying part.
+
+    Args:
+        mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
+    """
+
+    mock_urlopen.return_value = _release_response(
+        "v3.2.0", assets=[_asset("App-3.2.0_Setup.exe")]
+    )
+
+    result = UpdateChecker(
+        current_version="3.1.2", repo=_TEST_REPO, asset_pattern="*_Setup.exe"
+    ).check_for_update()
+
+    assert result.installer_asset.name == "App-3.2.0_Setup.exe"
+
+
+@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+def test_check_for_update_reports_no_installer_when_none_matches(mock_urlopen):
+    """
+    Verifies that a release publishing nothing that matches the pattern still yields
+    a result, with no installer asset on it. An older release predating the
+    installer is an ordinary outcome, not a failed check.
+
+    Args:
+        mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
+    """
+
+    mock_urlopen.return_value = _release_response(
+        "v3.2.0", assets=[_asset("App.zip"), _asset(DEFAULT_CHECKSUMS_NAME)]
+    )
+
+    result = UpdateChecker(
+        current_version="3.1.2", repo=_TEST_REPO, asset_pattern="App_Setup.exe"
+    ).check_for_update()
+
+    assert result.update_available is True
+    assert result.installer_asset is None
+    assert result.checksums_asset is not None
+
+
+@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+def test_check_for_update_reports_no_installer_without_an_asset_pattern(mock_urlopen):
+    """
+    Verifies that a consumer injecting no asset pattern gets no installer asset,
+    even when the release publishes one - the pattern is how an application names
+    its own installer, and guessing one would break the application-agnostic rule
+    this package is built on.
+
+    Args:
+        mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
+    """
+
+    mock_urlopen.return_value = _release_response(
+        "v3.2.0", assets=[_asset("App_Setup.exe")]
+    )
+
+    result = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO).check_for_update()
+
+    assert result.installer_asset is None
+
+
+@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+def test_check_for_update_reports_no_assets_when_the_release_lists_none(mock_urlopen):
+    """
+    Verifies that a response carrying no "assets" key at all is handled like a
+    release with no assets rather than raising, so an unexpected response shape
+    still leaves the manual download flow working.
+
+    Args:
+        mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
+    """
+
+    mock_urlopen.return_value = _release_response("v3.2.0")
+
+    result = UpdateChecker(
+        current_version="3.1.2", repo=_TEST_REPO, asset_pattern="App_Setup.exe"
+    ).check_for_update()
+
+    assert result.installer_asset is None
+    assert result.checksums_asset is None
+
+
+@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+def test_check_for_update_finds_the_checksums_asset_by_injected_name(mock_urlopen):
+    """
+    Verifies that the checksums asset is looked up by the injected name, so a
+    consumer whose pipeline publishes it under a different filename is not stuck
+    with the default.
+
+    Args:
+        mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
+    """
+
+    mock_urlopen.return_value = _release_response(
+        "v3.2.0", assets=[_asset("checksums.txt")]
+    )
+
+    result = UpdateChecker(
+        current_version="3.1.2", repo=_TEST_REPO, checksums_name="checksums.txt"
+    ).check_for_update()
+
+    assert result.checksums_asset.name == "checksums.txt"
