@@ -1,0 +1,109 @@
+name: Release Workflow
+
+# Build and publish a release whenever a version tag (e.g. v1.3.0) is pushed.
+on:
+  push:
+    tags: [ 'v*' ]
+
+# Allow the job to create the GitHub Release and upload the built distributions
+permissions:
+  contents: write
+
+jobs:
+  release:
+
+    # Give the job a name to link into the Github Rules UI
+    name: Build and Publish Release
+
+    # Unlike the two consuming apps, whose release jobs must run on windows-latest for
+    # PyInstaller and Inno Setup's ISCC.exe, this is a pure-Python package: the sdist and
+    # wheel it publishes are platform-independent, so it builds on the same runner the
+    # other two workflows here use.
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout repo. No submodules and no PAT: this package carries no private test data,
+    # so unlike the apps' release jobs it needs no repo secret.
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    # Set up Python environment
+    - name: Set up Python environment
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11.9"
+
+    # Install the package (including the GUI subpackage) and its development dependencies,
+    # plus build. build is deliberately not in the dev extra: it is release-pipeline
+    # tooling, not something a developer needs in order to run the tests.
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev,gui]"
+        pip install build
+
+    # Fail the release if the pushed tag does not match the packaged version, so a tag
+    # can never point at a distribution that reports a different version than the pin
+    # naming it. tomllib is in the standard library on 3.11, so this needs no dependency.
+    - name: Verify tag matches source version
+      run: |
+        TAG="${GITHUB_REF_NAME#v}"
+        VERSION="$(python -c 'import tomllib, pathlib; print(tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"])')"
+        echo "Tag version: $TAG / pyproject.toml version: $VERSION"
+        if [[ "$TAG" != "$VERSION" ]]; then
+            echo "::error::Tag ($TAG) does not match pyproject.toml version ($VERSION)."
+            exit 1
+        fi
+
+    # Fail the release if the changelog says nothing about this version. Consumers pin
+    # this package by tag, so the changelog is how they decide whether to move a pin;
+    # gating on it here is what keeps it from falling behind the version.
+    #
+    # This grep and CHANGELOG.md's heading format are one contract: the file's headings
+    # must stay "## [X.Y.Z] - YYYY-MM-DD" or this check silently matches nothing.
+    - name: Verify changelog documents this version
+      run: |
+        TAG="${GITHUB_REF_NAME#v}"
+        if ! grep -q "^## \[$TAG\]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## [$TAG]' section for this release."
+            exit 1
+        fi
+
+    # Run unit tests against the tagged commit. A bare pytest finds them because
+    # discovery is configured in pyproject.toml (the apps' "pytest tests/*" form,
+    # which works around having no such config, is not needed here).
+    - name: Run unit tests
+      run: |
+        pytest
+
+    # Build the sdist and wheel that are published as the release assets
+    - name: Build distributions
+      run: |
+        python -m build
+        ls -l dist
+
+    # Prove the wheel is installable and complete before publishing it. [tool.setuptools]
+    # lists the packaged subpackages explicitly, so a subpackage added to the source tree
+    # but not to that list would otherwise ship a wheel that imports only half the package.
+    #
+    # The cd is load-bearing: run from the repo root and the working directory's own
+    # fishbowl_common/ shadows the installed one, so the import would pass without ever
+    # touching what was built.
+    - name: Verify the built wheel installs and imports
+      run: |
+        python -m venv "$RUNNER_TEMP/wheel-check"
+        "$RUNNER_TEMP/wheel-check/bin/pip" install --quiet dist/*.whl
+        cd "$RUNNER_TEMP"
+        "$RUNNER_TEMP/wheel-check/bin/python" -c "import fishbowl_common, fishbowl_common.gui; print(fishbowl_common.__file__)"
+
+    # Create the GitHub Release with the built distributions and auto-generated notes.
+    # Attaching them also lets a consumer pin a release asset rather than a git ref.
+    - name: Create GitHub Release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release create "$GITHUB_REF_NAME" \
+          dist/*.tar.gz \
+          dist/*.whl \
+          --title "$GITHUB_REF_NAME" \
+          --generate-notes
