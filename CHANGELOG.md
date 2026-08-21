@@ -13,8 +13,23 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-21
+
 ### Added
 
+- `PatchNotes`, a reader for the changelog file an app ships beside its executable. Given
+  the running version and the version the user last launched, it returns the `## X.Y.Z`
+  sections between them, newest first — so a user who skipped a release still sees what it
+  changed — and an empty string when the file is missing, unreadable or has nothing to say.
+  ([#22](https://github.com/averylhammond/fishbowl-common/issues/22))
+- `PatchNotesWindow`, the themed window showing those notes: a heading naming the app and
+  version, the notes in a read-only box, and a Close button. Together with `PatchNotes` this
+  is the shared half of "show what changed on the first launch after an update"; the
+  settings key, the version stamp and the packaged notes file are each app's own.
+  ([#22](https://github.com/averylhammond/fishbowl-common/issues/22))
+- `version_utils`, holding the `parse_version()` and `compare_versions()` that
+  `UpdateChecker` and `PatchNotes` now share.
+  ([#22](https://github.com/averylhammond/fishbowl-common/issues/22))
 - A release workflow (`.github/workflows/release.yml`): a pushed `v*` tag is verified
   against `pyproject.toml`'s version and against this changelog, the unit tests are run,
   an sdist and wheel are built and smoke-installed, and a GitHub Release is published with
@@ -23,6 +38,22 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
   ([#10](https://github.com/averylhammond/fishbowl-common/issues/10))
 - `CLAUDE.md`, documenting the package's architecture, testing and release conventions.
   ([#12](https://github.com/averylhammond/fishbowl-common/issues/12))
+
+### Fixed
+
+- The update check no longer mistakes a pre-release tag for a failed check. `v2.2.0-rc1`
+  raised while the version was being parsed, which `check_for_update()` caught and returned
+  as `None` — shown to the user as "Update Check Failed — check your internet connection"
+  after a perfectly successful request. Unequal segment counts are also zero-padded now, so
+  a `1.2` release is no longer offered as an update to a user already running `1.2.0`.
+  ([#5](https://github.com/averylhammond/fishbowl-common/issues/5))
+
+### Changed
+
+- **Not breaking, but worth noting at a call site.** `UpdateChecker._parse_version()` is
+  gone; the comparison lives in `version_utils` as `parse_version()` and
+  `compare_versions()`. Nothing outside the class called the private method, so no consumer
+  has to change.
 
 ## [1.2.1] - 2026-08-18
 
@@ -91,7 +122,8 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
 - Initial release: `ArgumentProvider`, `SettingsRepository` and `UpdateChecker`, their unit
   tests, and the unit-test workflow.
 
-[Unreleased]: https://github.com/averylhammond/fishbowl-common/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/averylhammond/fishbowl-common/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/averylhammond/fishbowl-common/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/averylhammond/fishbowl-common/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/averylhammond/fishbowl-common/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/averylhammond/fishbowl-common/compare/v1.0.1...v1.1.0
