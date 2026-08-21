@@ -59,7 +59,7 @@ that shapes how work lands here; see
 ## Consuming Apps and the Pin
 
 The version lives in exactly one place, `version` in `pyproject.toml`, and is published by
-tag. Tags to date: `v1.2.1`, `v1.2.0`, `v1.1.0`, `v1.0.1`, `v0.1.0`.
+tag. Tags to date: `v1.3.0`, `v1.2.1`, `v1.2.0`, `v1.1.0`, `v1.0.1`, `v0.1.0`.
 
 Both apps carry the byte-identical pin at `requirements/release.txt:1`:
 
@@ -101,10 +101,11 @@ Everything public is re-exported from the two package roots, and consumers impor
 those names rather than from the individual modules. Keep a new public name listed in both
 the import block and `__all__`.
 
-- **`fishbowl_common/__init__.py`** — re-exports `ArgumentProvider`, `ReleaseAsset`,
-  `SettingsRepository`, `UpdateChecker`, `UpdateCheckResult`, `UpdateCoordinator`,
-  `UpdateDisplay`, `UpdateDownloader` and `UpdateInstaller`. It never touches
-  `fishbowl_common.gui`, so `import fishbowl_common` does not pull in tkinter.
+- **`fishbowl_common/__init__.py`** — re-exports `ArgumentProvider`, `PatchNotes`,
+  `ReleaseAsset`, `SettingsRepository`, `UpdateChecker`, `UpdateCheckResult`,
+  `UpdateCoordinator`, `UpdateDisplay`, `UpdateDownloader`, `UpdateInstaller`,
+  `compare_versions` and `parse_version`. It never touches `fishbowl_common.gui`, so
+  `import fishbowl_common` does not pull in tkinter.
 - **`ArgumentProvider`** (`fishbowl_common/ArgumentProvider.py`) — parses the
   `--integration-test` flag into `integration_test_mode` so an app can run headless with
   no GUI popups. `__init__(description="Fishbowl desktop application")` takes only a
@@ -132,11 +133,41 @@ the import block and `__all__`.
   - `DEFAULT_CHECKSUMS_NAME = "SHA256SUMS.txt"` is the asset name an app's release
     pipeline must publish for an in-place install to be offered. Renaming it here silently
     downgrades both apps to the manual download rather than failing anything.
-  - **`_parse_version()` is hand-rolled and known-broken in two ways** (#5): a non-numeric
-    segment (`v2.2.0-rc1`) raises, which `check_for_update()` catches and turns into
-    `None` — indistinguishable to the user from being offline — and unequal segment counts
-    compare element-wise, so `1.2` sorts below `1.2.0`. Fix it here rather than sanitizing
+  - **The version comparison is not its own.** `check_for_update()` calls
+    `compare_versions()` from `version_utils`; the private `_parse_version()` it used to
+    carry was extracted there when `PatchNotes` came to need the identical comparison
+    (#22), and fixed while it moved (#5). Do not reimplement a comparison here or sanitize
     version strings in a consumer.
+- **`version_utils`** (`fishbowl_common/version_utils.py`) — two module-level functions
+  rather than a class, the only such module in the headless half. `parse_version()` turns a
+  dotted version into an integer tuple, tolerating a leading `v` and stopping at the first
+  segment with no leading digits, so a pre-release tag parses instead of raising;
+  `compare_versions()` zero-pads both tuples to equal length before comparing, so `1.2` and
+  `1.2.0` are the same version. **Neither ever raises**: an unparseable version yields `()`,
+  and each caller turns that into its own quiet outcome. `UpdateChecker` and `PatchNotes`
+  both use it, which is why it is a module of its own rather than a method on either — a
+  pure-logic reader should not import the module that does network I/O.
+  - The accepted limitation is that a pre-release sorts **equal** to its final release
+    (`2.2.0-rc1` == `2.2.0`). Ordering those correctly is PEP 440's job and would mean
+    taking `packaging`; see the zero-dependency rule under Key conventions.
+- **`PatchNotes`** (`fishbowl_common/PatchNotes.py`) — `__init__(notes_path: Path)`, and
+  `notes_since(current_version, last_seen_version)` returning every `## X.Y.Z` section
+  strictly newer than `last_seen_version` and no newer than `current_version`, newest first,
+  or `""` when there are none. It reads a changelog file an app **ships in its release
+  payload** (next to `USER_GUIDE.txt`) rather than a release body from GitHub, so the first
+  launch after an update needs no network — these run on shop-floor machines.
+  - **It returns a range, not one version's notes**, because a user who skips a release and
+    updates straight past it must still be told what that release changed.
+  - `last_seen_version=None` means *no lower bound*, not "show nothing". Deciding that a
+    fresh install should be shown nothing belongs to the consuming app, which is the only
+    side that can tell a fresh install from an upgrade.
+  - **It fails silently**, like the update classes and unlike `SettingsRepository`: a
+    missing, unreadable or unparseable file returns `""` and takes no `report_error`. A
+    cosmetic feature must never be able to stop the app from starting.
+  - The file is read per call rather than in `__init__`, so constructing one cannot fail.
+    The heading pattern tolerates a leading `v`, a `[…]` wrapper and a trailing date, and
+    each section keeps its heading line so a multi-version result says which notes belong to
+    which release.
 - **`UpdateDownloader`** (`fishbowl_common/UpdateDownloader.py`) — stateless, no
   collaborators, no `__init__`. `fetch_expected_sha256()` reads the digest out of the
   checksums asset; `download()` streams the asset in `CHUNK_SIZE` pieces, reporting
@@ -202,6 +233,13 @@ it opens, so it stays styled consistently with the main window behind it.
   reason a window this app-specific can live here at all.
 - **`FileEditorWindow`** — views or edits one text file in a monospace box; `editable`
   toggles the Save button and `save_callback` is guarded, so a read-only open needs none.
+- **`PatchNotesWindow`** — shows what changed in the version now running: a heading naming
+  the app and version, the notes in a read-only `ScrolledText`, and a Close button. The
+  notes arrive as a **string**, not a path — they are frequently the concatenated sections
+  of several releases, so they are no file on disk, which is the main reason this is not
+  just `FileEditorWindow(editable=False)` (which also carries a save callback, renders
+  monospace, and has nowhere for the heading). The box is disabled after the insert; the
+  font is the display font, since these are prose rather than aligned columns.
 - **`UpdateWindow`** — announces a newer release. It always offers "Exit and Update"
   (`webbrowser.open()` on the release page) and additionally offers "Update and Restart"
   with a progress bar when a `start_install_callback` is passed. Either route exits the
@@ -247,11 +285,12 @@ it opens, so it stays styled consistently with the main window behind it.
 - **Zero runtime dependencies.** `dependencies = []`, and every import in both halves is
   stdlib. `README.md:11-12` advertises this, and both apps ship as PyInstaller onefile
   builds where each added dependency is payload the customer downloads. **Taking a runtime
-  dependency is a deliberate decision, not a convenience.** The live case is #5, where
-  `packaging.version.Version` would fix `_parse_version()` correctly at the cost of the
-  claim; the current stance is that stdlib-only holds and #5 is fixed with a hand-rolled
-  parser. If `packaging` ever wins that argument, the README claim, `pyproject.toml` and
-  both apps' installs move with it — it is not a local edit.
+  dependency is a deliberate decision, not a convenience.** The case that tested it was #5,
+  where `packaging.version.Version` would have fixed the version comparison correctly at the
+  cost of the claim; stdlib-only won, and `version_utils` is the hand-rolled result, paying
+  for it with pre-releases sorting equal to their final release. If `packaging` ever wins
+  that argument, the README claim, `pyproject.toml` and both apps' installs move with it —
+  it is not a local edit.
 - **`Tooltip` binds with `add="+"`, and that flag is load-bearing downstream.**
   `FishbowlInventoryTool` attaches a tooltip to every column checkbutton, each of which
   already carries a `command` that persists that column's state. A binding without

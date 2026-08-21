@@ -27,6 +27,7 @@ from fishbowl_common.gui.ThemedSubwindow import ThemedSubwindow
 from fishbowl_common.gui.MessageWindow import MessageWindow
 from fishbowl_common.gui.AboutWindow import AboutWindow
 from fishbowl_common.gui.FileEditorWindow import FileEditorWindow
+from fishbowl_common.gui.PatchNotesWindow import PatchNotesWindow
 from fishbowl_common.gui.UpdateWindow import UpdateWindow
 from fishbowl_common.gui.Tooltip import Tooltip
 
@@ -48,6 +49,7 @@ __all__ = [
     "MessageWindow",
     "AboutWindow",
     "FileEditorWindow",
+    "PatchNotesWindow",
     "UpdateWindow",
     "Tooltip",
 ]

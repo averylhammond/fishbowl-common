@@ -178,6 +178,48 @@ def test_check_for_update_compares_versions_semantically_not_lexically(mock_urlo
 
 
 @patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+def test_check_for_update_handles_a_pre_release_tag(mock_urlopen):
+    """
+    Verifies that a release tagged as a pre-release yields an ordinary result
+    rather than None. A pre-release tag used to raise while the version was being
+    parsed, which the broad handler turned into None - reported to the user as a
+    failed check, so a perfectly successful one looked like a network outage.
+
+    Args:
+        mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
+    """
+
+    mock_urlopen.return_value = _release_response("v2.2.0-rc1")
+
+    result = UpdateChecker(
+        current_version="2.1.0", repo=_TEST_REPO
+    ).check_for_update()
+
+    assert result is not None
+    assert result.update_available is True
+
+
+@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+def test_check_for_update_no_update_when_the_release_omits_a_segment(mock_urlopen):
+    """
+    Verifies that a release written with fewer segments than the running version
+    is not offered as an update: "1.2" and "1.2.0" are the same version, but
+    comparing them segment by segment used to sort the shorter one first.
+
+    Args:
+        mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
+    """
+
+    mock_urlopen.return_value = _release_response("v1.2")
+
+    result = UpdateChecker(
+        current_version="1.2.0", repo=_TEST_REPO
+    ).check_for_update()
+
+    assert result.update_available is False
+
+
+@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
 def test_check_for_update_requests_latest_release_url_with_timeout(mock_urlopen):
     """
     Verifies that the check queries the repo's GitHub latest-release endpoint,
