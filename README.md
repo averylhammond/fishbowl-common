@@ -3,6 +3,7 @@
 [![Unit Tests](https://github.com/averylhammond/fishbowl-common/actions/workflows/unit-tests.yml/badge.svg?branch=main)](https://github.com/averylhammond/fishbowl-common/actions/workflows/unit-tests.yml)
 [![Code Coverage](https://github.com/averylhammond/fishbowl-common/actions/workflows/code-coverage.yml/badge.svg?branch=main)](https://github.com/averylhammond/fishbowl-common/actions/workflows/code-coverage.yml)
 [![codecov](https://codecov.io/gh/averylhammond/fishbowl-common/branch/main/graph/badge.svg)](https://codecov.io/gh/averylhammond/fishbowl-common)
+[![Release](https://github.com/averylhammond/fishbowl-common/actions/workflows/release.yml/badge.svg)](https://github.com/averylhammond/fishbowl-common/actions/workflows/release.yml)
 
 Shared infrastructure and GUI classes for the Fishbowl desktop tools
 ([FishbowlInvoiceTool](https://github.com/averylhammond/FishbowlInvoiceTool),
@@ -180,18 +181,40 @@ display. `color_theme` and `font_settings` are excluded from coverage as inert d
 
 ## Continuous integration
 
-Both workflows run on pull requests to `main` and on manual dispatch.
+The first two run on pull requests to `main` and on manual dispatch; the third runs only
+when a version tag is pushed.
 
 | Workflow | What it checks |
 | --- | --- |
 | [Unit Tests](.github/workflows/unit-tests.yml) | The full `pytest` suite on `ubuntu-latest`. |
 | [Code Coverage](.github/workflows/code-coverage.yml) | `pytest --cov=fishbowl_common --cov-report=xml --cov-report=term --cov-fail-under=80`, uploaded to Codecov. |
+| [Release](.github/workflows/release.yml) | On a pushed `v*` tag: the tag against `pyproject.toml`, the tag against [`CHANGELOG.md`](CHANGELOG.md), the test suite, and that the built wheel installs and imports. |
 
 ## Releases
 
 The package version lives in `pyproject.toml` and is published by tag. Consumers pin a
 tag in their requirements (see [Setup](#setup)), so bumping the version here has no
 effect on an app until that app's pin is moved to the new tag.
+[`CHANGELOG.md`](CHANGELOG.md) records what each tag changed, which is what makes moving a
+pin a decision rather than an act of faith.
+
+Pushing a `vX.Y.Z` tag runs the release workflow, which publishes a GitHub Release with an
+sdist and a wheel attached — so an app can pin a release asset instead of a git ref if it
+prefers. It refuses to publish unless the tag matches `pyproject.toml`'s version and
+`CHANGELOG.md` documents that version, so a release can never ship a distribution whose
+number disagrees with the tag naming it, or one nothing records.
+
+Cutting a release:
+
+```bash
+# Bump `version` in pyproject.toml and move CHANGELOG.md's [Unreleased] section under a
+# `## [X.Y.Z] - YYYY-MM-DD` heading, then merge that PR. Then, from an up-to-date main:
+git checkout main && git pull
+git tag vX.Y.Z && git push origin vX.Y.Z
+```
+
+Tags `v0.1.0` through `v1.2.1` predate this workflow and have no Release behind them. They
+remain valid pins — a git ref is all a pin resolves — and the changelog covers them.
 
 ## Related projects
 

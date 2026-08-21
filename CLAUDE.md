@@ -72,8 +72,10 @@ work can land on `main` here without breaking anything downstream, and a fix is 
 actually delivered until two other repos are edited. So a change that alters a public
 signature is not one PR but three, in order:
 
-1. Here: make the change, bump `version` in `pyproject.toml`, merge, push the matching
-   `vX.Y.Z` tag.
+1. Here: make the change, bump `version` in `pyproject.toml`, add the matching
+   `## [X.Y.Z]` section to `CHANGELOG.md`, merge, push the matching `vX.Y.Z` tag. The
+   changelog entry lands **with** the bump, not after it — the release workflow refuses to
+   publish a tag the changelog does not document.
 2. `FishbowlInvoiceTool`: move the pin, adapt the call sites, merge.
 3. `FishbowlInventoryTool`: the same.
 
@@ -81,11 +83,17 @@ The precedent is `v1.2.0`, which changed `show_update_available()` to take a sec
 `start_install` argument — a method both apps implement, so both had to move together.
 Plan for that shape of work rather than discovering it at step 2.
 
-Known gaps in this pipeline, tracked rather than fixed: there is no release workflow and
-nothing verifies that a pushed tag agrees with `pyproject.toml` (#10), there is no
-`CHANGELOG.md`, so moving a pin is an act of faith (#10), and the packaging metadata has
-no `py.typed`, `LICENSE` or `__version__` — the annotations are written throughout and
-then discarded at the package boundary (#9).
+Pushing the tag is what runs `.github/workflows/release.yml`, and two `::error::` gates
+there make the pin trustworthy: the tag must equal `pyproject.toml`'s `version`, and
+`CHANGELOG.md` must carry a `## [X.Y.Z]` section for it. So the changelog is the answer to
+"what do I get by moving the pin", and it cannot fall behind the version without failing
+the release. The five tags predating that workflow (`v0.1.0` through `v1.2.1`) were pushed
+by hand and have no GitHub Release behind them; they are backfilled in `CHANGELOG.md` and
+still work as pins, since a git ref is all a pin needs.
+
+One gap in this pipeline is still tracked rather than fixed: the packaging metadata has no
+`py.typed`, `LICENSE` or `__version__` — the annotations are written throughout and then
+discarded at the package boundary (#9).
 
 ## Architecture
 
@@ -335,14 +343,39 @@ since the thing under test genuinely is the SQL.
 
 ### CI
 
-Two workflows, both on `pull_request` to `main` and `workflow_dispatch`, both on
-`ubuntu-latest` with `actions/setup-python@v5` at `3.11.9` and
-`pip install -e ".[dev,gui]"`.
+Three workflows. Two run on `pull_request` to `main` and `workflow_dispatch`; the third
+runs only on a pushed `v*` tag. All three are `ubuntu-latest` with
+`actions/setup-python@v5` at `3.11.9` and `pip install -e ".[dev,gui]"`.
 
 | Workflow | What it runs |
 | --- | --- |
 | `.github/workflows/unit-tests.yml` | bare `pytest` |
 | `.github/workflows/code-coverage.yml` | `pytest --cov=fishbowl_common --cov-report=xml --cov-report=term --cov-fail-under=80`, then `codecov/codecov-action@v5` (needs `CODECOV_TOKEN`; `fail_ci_if_error: false`, so a Codecov outage never masks the gate) |
+| `.github/workflows/release.yml` | two `::error::` gates, `pytest`, `python -m build`, a wheel smoke-install, then `gh release create --generate-notes` with the sdist and wheel attached |
+
+`release.yml` fires on a pushed `v*` tag and publishes the GitHub Release. Four things in it
+are load-bearing:
+
+- **The tag must equal `pyproject.toml`'s `version`**, read with `tomllib` (stdlib on 3.11,
+  so the gate needs nothing installed). This is the apps' own check with the version source
+  swapped, since there is no `constants.py` here.
+- **`CHANGELOG.md` must carry a `## [X.Y.Z]` section for the tag**, which has no analog in
+  the apps. That `grep` and the changelog's heading format are one contract: reformat the
+  headings and the check silently matches nothing.
+- **The built wheel is installed into a fresh venv and imported before publishing**, both
+  halves of it. `[tool.setuptools]` lists the packaged subpackages explicitly, so a
+  subpackage added to the tree but not to that list would otherwise ship a half-empty wheel.
+  The step `cd`s out of the repo first — from the root, the working directory's own
+  `fishbowl_common/` shadows the installed one and the import proves nothing.
+- **`build` is installed in the workflow, not added to the `dev` extra**, the same call the
+  apps make by keeping PyInstaller out of `requirements/`: it is release tooling, not
+  something a developer needs to run the tests.
+
+Running on `ubuntu-latest` is a **deliberate divergence** from the apps' release workflows,
+which must be `windows-latest` for PyInstaller and Inno Setup's `ISCC.exe`. This package
+publishes a platform-independent sdist and wheel, so it builds where the other two
+workflows do. It also needs no repo secret — no submodule, no `CUSTOMER_DATA_PAT` — and
+uses the automatic `GITHUB_TOKEN` for the release.
 
 `[tool.coverage.run]` omits `color_theme.py` and `font_settings.py` as inert styling data.
 **Every other measured module is at 100%**, so the gate is headroom rather than a target to
@@ -365,3 +398,6 @@ as an intentional mirror of the apps' files, and do not fix one without the othe
   when the change bumps the version.
 - Merge through a PR. If the change alters a public signature, remember it is step 1 of
   three — see [Consuming Apps and the Pin](#consuming-apps-and-the-pin).
+- Cutting a release is: bump `version` in `pyproject.toml`, move `CHANGELOG.md`'s
+  `## [Unreleased]` content under a `## [X.Y.Z] - YYYY-MM-DD` heading, merge, then push the
+  matching `vX.Y.Z` tag. The release workflow fails the push if either half is missing.
