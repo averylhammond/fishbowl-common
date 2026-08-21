@@ -23,6 +23,17 @@ declared behind a [`[gui]` extra](#setup).
   headless (no GUI popups) during automated testing.
 - **`SettingsRepository`** — a SQLite key/value store for user settings (theme, font,
   etc.) that survive between runs. The database path is injected by the caller.
+- **`PatchNotes`** — reads the changelog file an app ships beside its executable and
+  returns the `## X.Y.Z` sections between the version the user last launched and the one
+  they are running now, newest first, so the app can show them what an update changed.
+  Reading a bundled file rather than a release body means the first launch after an update
+  needs no network. It returns a range rather than one version's notes, so a user who
+  skipped a release still sees it, and it fails silently: a missing or unparseable file
+  returns an empty string.
+- **`version_utils`** — `parse_version()` and `compare_versions()`, the semantic version
+  comparison `UpdateChecker` and `PatchNotes` share. Neither raises: a pre-release tag
+  parses to its numeric version rather than failing, and both sides are zero-padded before
+  they are compared, so `1.2` and `1.2.0` are the same version.
 - **`UpdateChecker`** — queries the GitHub releases API for a newer version and compares
   it against the running version, also surfacing the release's installer and checksums
   assets. The current version, `owner/repo` and the installer's `asset_pattern` are
@@ -76,6 +87,10 @@ font when it opens, so it stays styled consistently with the main window behind 
   injected by the caller.
 - **`FileEditorWindow`** — views or edits one text file in a monospace box; an `editable`
   flag toggles the Save button.
+- **`PatchNotesWindow`** — shows what changed in the version now running: a heading
+  naming the app and version, the notes in a read-only scrolling box, and a Close button.
+  The notes are passed in as a string rather than a path, since they are often several
+  releases' sections concatenated.
 - **`UpdateWindow`** — announces a newer release and offers the ways to get it: "Update
   and Restart" (with a themed progress bar) when the caller passes an install callback,
   and always "Exit and Update", which opens the release's download page. Either way it

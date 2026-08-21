@@ -3,6 +3,8 @@ import json
 import urllib.error
 import urllib.request
 
+from fishbowl_common.version_utils import compare_versions
+
 # Cap how long the request may block so a slow or unreachable network can never
 # stall a caller (e.g. an update check run on application startup).
 REQUEST_TIMEOUT_SECONDS = 5
@@ -152,8 +154,8 @@ class UpdateChecker:
             latest_version = release["tag_name"].lstrip("vV")
             release_url = release["html_url"]
 
-            update_available = self._parse_version(latest_version) > self._parse_version(
-                self.current_version
+            update_available = (
+                compare_versions(latest_version, self.current_version) > 0
             )
 
             assets = release.get("assets") or []
@@ -166,9 +168,9 @@ class UpdateChecker:
                 self._find_asset(assets, self.checksums_name),
             )
         except (urllib.error.URLError, OSError, ValueError, KeyError):
-            # URLError/OSError: network or HTTP failure. ValueError: malformed JSON
-            # or a non-numeric version segment. KeyError: an unexpected response
-            # shape missing the fields we rely on.
+            # URLError/OSError: network or HTTP failure. ValueError: malformed
+            # JSON. KeyError: an unexpected response shape missing the fields we
+            # rely on.
             return None
 
     ###########################################################################
@@ -203,23 +205,3 @@ class UpdateChecker:
                 )
 
         return None
-
-    ###########################################################################
-    ###                  UpdateChecker -> _parse_version()                  ###
-    ###########################################################################
-    def _parse_version(self, version: str) -> tuple[int, ...]:
-        """
-        Parses a version string into a tuple of integers for semantic comparison.
-
-        Comparing the integer tuples (rather than the raw strings) keeps the
-        ordering numeric, so "3.10.0" correctly sorts after "3.9.0".
-
-        Args:
-            version (str): A dotted version string, optionally prefixed with "v"
-                (e.g. "v3.1.0" or "3.1.0").
-
-        Returns:
-            tuple[int, ...]: The version's numeric segments, e.g. (3, 1, 0).
-        """
-
-        return tuple(int(segment) for segment in version.lstrip("vV").split("."))
