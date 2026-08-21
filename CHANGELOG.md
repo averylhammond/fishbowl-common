@@ -13,6 +13,14 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
 
 ## [Unreleased]
 
+### Fixed
+
+- `SettingsRepository.initialize_database()` now reports an `OSError` from creating the
+  data directory through `report_error` instead of letting it escape the `sqlite3.Error`
+  handler. A read-only or permission-denied data directory crashed the consuming app at
+  startup, before its display existed.
+  ([#4](https://github.com/averylhammond/fishbowl-common/issues/4))
+
 ## [1.3.0] - 2026-08-21
 
 ### Added

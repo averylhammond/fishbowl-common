@@ -120,9 +120,8 @@ the import block and `__all__`.
   which is a constraint the consumers depend on — an app persisting a boolean compares the
   stored string against `str(True)` on the way back rather than calling `bool()` on it,
   since `bool("False")` is `True`.
-  - Two known defects live here: a connection is leaked on every call (#3), and `mkdir`'s
-    `OSError` escapes the `sqlite3.Error` handler (#4). Fix them here rather than working
-    around either at a call site.
+  - One known defect lives here: a connection is leaked on every call (#3). Fix it here
+    rather than working around it at a call site.
 - **`UpdateChecker`** (`fishbowl_common/UpdateChecker.py`) —
   `__init__(current_version, repo, asset_pattern=None, checksums_name=DEFAULT_CHECKSUMS_NAME)`,
   building `https://api.github.com/repos/{repo}/releases/latest`. `check_for_update()`
@@ -272,8 +271,9 @@ it opens, so it stays styled consistently with the main window behind it.
 - **`report_error` is the callback pattern for a failure the user should see.**
   `SettingsRepository` is the only class carrying one today:
   `report_error: Callable[[str, str], None] = lambda *_: None`, stored on the instance and
-  invoked as `(title, message)` from inside three `except sqlite3.Error` blocks, never
-  re-raising. **The no-op default is what lets `initialize_database()` run from `__init__`
+  invoked as `(title, message)` from inside one `except` block per method, never
+  re-raising. `initialize_database()` catches `(sqlite3.Error, OSError)` rather than
+  `sqlite3.Error` alone, since its `mkdir` fails with the latter (#4). **The no-op default is what lets `initialize_database()` run from `__init__`
   before any display exists** — an error there falls to the no-op, and only later reads and
   writes reach the app's popup. A new class that can fail in a way the user must act on
   takes the same parameter, with the same no-op default.

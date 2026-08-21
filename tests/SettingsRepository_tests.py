@@ -86,6 +86,27 @@ def test_initialize_database_error_is_reported(settings_repo):
     settings_repo.report_error.assert_called_once()
 
 
+def test_initialize_database_mkdir_error_is_reported(settings_repo):
+    """
+    Verifies that an OSError while creating the data directory is surfaced through
+    the error reporter rather than raised, since mkdir does not fail with a
+    sqlite3.Error.
+
+    Args:
+        settings_repo (pytest.fixture): Provides the repository and its mocks
+    """
+
+    # The data directory cannot be created (read-only volume, permission denial)
+    settings_repo.db_path.parent.mkdir.side_effect = OSError("read-only file system")
+
+    settings_repo.repo.initialize_database()
+
+    settings_repo.report_error.assert_called_once()
+
+    # The failure short-circuits before SQLite, leaving only the fixture's own connect
+    assert settings_repo.connect.call_count == 1
+
+
 ###############################################################################
 ###               Tests SettingsRepository -> get_all_settings()            ###
 ###############################################################################

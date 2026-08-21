@@ -59,7 +59,9 @@ class SettingsRepository:
                     "key TEXT PRIMARY KEY, "
                     "value TEXT)"
                 )
-        except sqlite3.Error as error:
+        # mkdir raises OSError rather than sqlite3.Error when the data directory
+        # cannot be created, so both are reported rather than escaping to the caller
+        except (sqlite3.Error, OSError) as error:
             self.report_error(
                 "Settings Error",
                 f"Could not initialize the settings database at {self.db_path}: {error}",
