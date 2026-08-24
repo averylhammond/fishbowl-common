@@ -17,3 +17,6 @@ venv/
 .coverage
 htmlcov/
 coverage.xml
+
+# Claude Code personal settings (rules/ and skills/ are team-shared and committed)
+.claude/settings.local.json
