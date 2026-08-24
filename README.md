@@ -195,13 +195,14 @@ display. `color_theme` and `font_settings` are excluded from coverage as inert d
 
 ## Continuous integration
 
-The first two run on pull requests to `main` and on manual dispatch; the third runs only
-when a version tag is pushed.
+The first two run on pull requests to `main` and on manual dispatch, and Code Coverage also
+runs on pushes to `main` so Codecov keeps a main-branch baseline for PR comparisons; the
+third runs only when a version tag is pushed.
 
 | Workflow | What it checks |
 | --- | --- |
 | [Unit Tests](.github/workflows/unit-tests.yml) | The full `pytest` suite on `ubuntu-latest`. |
-| [Code Coverage](.github/workflows/code-coverage.yml) | `pytest --cov=fishbowl_common --cov-report=xml --cov-report=term --cov-fail-under=80`, uploaded to Codecov. |
+| [Code Coverage](.github/workflows/code-coverage.yml) | `pytest --cov=fishbowl_common --cov-report=xml --cov-report=term --cov-fail-under=90`, uploaded to Codecov. |
 | [Release](.github/workflows/release.yml) | On a pushed `v*` tag: the tag against `pyproject.toml`, the tag against [`CHANGELOG.md`](CHANGELOG.md), the test suite, and that the built wheel installs and imports. |
 
 ## Releases

@@ -1,10 +1,16 @@
 name: Code Coverage Workflow
 
-# Run the coverage pipeline on pull requests to main, and manually on demand.
-# The job fails (and blocks the PR) when total coverage drops below 80%.
+# Run the coverage pipeline on pull requests to main (so Codecov can post the PR
+# coverage comment), on pushes to main (so Codecov records the main-branch baseline
+# those PR comments are compared against, and the README badge stays current), and
+# manually on demand. The job fails when total coverage drops below 90%.
 on:
   pull_request:
     branches: [ main ]
+
+  push:
+    branches: [ main ]
+
   workflow_dispatch:
 
 jobs:
@@ -29,17 +35,19 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e ".[dev,gui]"
 
-    # Run the tests under coverage. --cov-fail-under=80 is the gate: the step exits
-    # non-zero (failing the PR check) if total coverage is below 80%. The XML report
-    # feeds the Codecov upload below.
+    # Run the tests under coverage. --cov-fail-under=90 is the gate: the step exits
+    # non-zero (failing the PR check) if total coverage is below 90%, matching the
+    # gate both consuming apps hold. The XML report feeds the Codecov upload below.
     - name: Run tests with coverage
       run: |
-        pytest --cov=fishbowl_common --cov-report=xml --cov-report=term --cov-fail-under=80
+        pytest --cov=fishbowl_common --cov-report=xml --cov-report=term --cov-fail-under=90
 
     # Publish the coverage report to Codecov (drives the coverage percentage badge).
-    # Requires a CODECOV_TOKEN repo secret; the upload soft-fails so a Codecov
-    # outage never masks or blocks the coverage gate above.
+    # Requires a CODECOV_TOKEN repo secret. always() so the report still uploads when
+    # the gate above fails -- that is exactly when the PR coverage comment is most
+    # useful. The upload itself soft-fails so a Codecov outage never masks the gate.
     - name: Upload coverage to Codecov
+      if: always()
       uses: codecov/codecov-action@v5
       with:
         files: ./coverage.xml

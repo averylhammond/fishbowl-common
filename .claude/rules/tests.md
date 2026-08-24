@@ -20,7 +20,8 @@ implementations — mirror them rather than inventing new patterns.
 
 Every unit test exercises exactly **one** class or function, with all collaborators mocked, so a
 failure points unambiguously at the unit under test. Never let a unit test touch the real
-network, a real GUI, or the real filesystem.
+network, a real GUI, or the real filesystem — the single carve-out is described at the bottom of
+this file.
 
 - **Fixtures return a `types.SimpleNamespace`** bundling the object under test with its mocks
   (`coordinator.coordinator` / `coordinator.display`), so a test reaches both without re-deriving
@@ -48,8 +49,9 @@ network, a real GUI, or the real filesystem.
 
 The generic principles are assumed. The three that constrain this suite specifically:
 
-- **Fast** — no real network, GUI, or (today) filesystem I/O. The whole run stays under a second,
-  and that is a budget, not an observation.
+- **Fast** — no real network or GUI, and no filesystem I/O beyond the `tmp_path` database in
+  `test_SettingsRepository.py`. The whole run stays under a second, and that is a budget, not an
+  observation.
 - **Repeatable** — `git status` must show no new artifacts after a run.
 - **Timely** — a new branch or utility function gets its test in the same change.
 
@@ -63,7 +65,19 @@ The generic principles are assumed. The three that constrain this suite specific
 - Give every test and helper a docstring describing what it verifies, with an `Args:` block
   documenting every mock/fixture parameter.
 
-## The one acknowledged gap
+## The one carve-out from "no real I/O"
 
-`tests/test_SettingsRepository.py` never executes the SQL it asserts, so the tests would pass
-against a wrong schema (#11). Detail in `.claude/rules/settings-repository.md`.
+`tests/test_SettingsRepository.py` is the only file mixing mocked and real tests, and each half
+earns its place (#11):
+
+- the **mocked** tests (`settings_repo`, patching `sqlite3.connect`) cover the `report_error`
+  branches, the `OSError` from `mkdir`, and `connection.close()` on every path — failures a real
+  database will not readily produce;
+- the **real** tests (`real_settings_repo`, a `tmp_path` database with nothing patched) are the
+  only ones that execute the SQL, so they are what catches a wrong schema. The literal-string
+  assertions on their own cannot: rename a column in both the source and the expected string and
+  the mocked half stays green.
+
+This is not a precedent for a second exception. It holds because the SQL genuinely *is* the unit
+under test, and it stays cheap and hermetic: `tmp_path` sits outside the repo, so `git status` is
+still clean after a run. Detail in `.claude/rules/settings-repository.md`.
