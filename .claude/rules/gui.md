@@ -50,5 +50,5 @@ own `title`/`configure`/`_center_over_parent`, and every widget class at its poi
 `_distinct_widget` returns a fresh `MagicMock()` per widget so each is independently assertable.
 That is what lets the whole suite run on `ubuntu-latest` with no display and no `python3-tk`.
 
-`tests/gui/UpdateWindow_tests.py` is the richest fixture — mirror it rather than inventing a new
+`tests/gui/test_UpdateWindow.py` is the richest fixture — mirror it rather than inventing a new
 pattern. The general test conventions live in `.claude/rules/tests.md`.

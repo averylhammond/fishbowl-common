@@ -28,7 +28,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e ".[dev,gui]"
 
-    # Run unit tests with pytest (discovery is configured in pyproject.toml)
+    # Run unit tests with pytest
     - name: Run tests
       run: |
         pytest

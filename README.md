@@ -110,7 +110,7 @@ fishbowl-common[gui] @ git+https://github.com/averylhammond/fishbowl-common.git@
 Drop the `[gui]` to install only the headless half. The extra pulls in no packages —
 tkinter ships with CPython — so it is a declaration of intent rather than a dependency:
 `import fishbowl_common` must keep working on a machine with no Tcl/Tk, and
-`tests/headless_import_tests.py` fails the build if that ever stops being true.
+`tests/test_headless_import.py` fails the build if that ever stops being true.
 
 To work on the package itself (Python 3.11):
 
@@ -188,9 +188,8 @@ pytest                                                        # unit tests
 pytest --cov=fishbowl_common --cov-report=term-missing        # with a coverage table
 ```
 
-Test files use the `*_tests.py` suffix; `pyproject.toml` widens pytest discovery to match
-them and points it at `tests/`, so a bare `pytest` finds everything — including the GUI
-tests under `tests/gui/`. Those never open a window: each one patches
+`pyproject.toml` points pytest at `tests/`, so a bare `pytest` finds everything —
+including the GUI tests under `tests/gui/`. Those never open a window: each one patches
 `tk.Toplevel.__init__` and every widget class, so the suite runs on a machine with no
 display. `color_theme` and `font_settings` are excluded from coverage as inert data.
 

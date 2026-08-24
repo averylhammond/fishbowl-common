@@ -69,9 +69,7 @@ jobs:
             exit 1
         fi
 
-    # Run unit tests against the tagged commit. A bare pytest finds them because
-    # discovery is configured in pyproject.toml (the apps' "pytest tests/*" form,
-    # which works around having no such config, is not needed here).
+    # Run unit tests against the tagged commit
     - name: Run unit tests
       run: |
         pytest

@@ -2,8 +2,8 @@
 paths:
   - "fishbowl_common/version_utils.py"
   - "fishbowl_common/PatchNotes.py"
-  - "tests/version_utils_tests.py"
-  - "tests/PatchNotes_tests.py"
+  - "tests/test_version_utils.py"
+  - "tests/test_PatchNotes.py"
 ---
 
 # Version parsing and patch notes

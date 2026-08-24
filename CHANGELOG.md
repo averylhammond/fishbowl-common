@@ -111,7 +111,7 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
   `AboutWindow`, `FileEditorWindow`, `UpdateWindow`, `Tooltip`, `color_theme` and
   `font_settings`, lifted from the two apps. The extra installs no packages — tkinter ships
   with CPython — and marks intent: the top-level `fishbowl_common` must stay importable with
-  no Tcl/Tk present, which `tests/headless_import_tests.py` now enforces.
+  no Tcl/Tk present, which `tests/test_headless_import.py` now enforces.
   ([#13](https://github.com/averylhammond/fishbowl-common/issues/13))
 - A code-coverage workflow gating pull requests at 80%.
   ([#1](https://github.com/averylhammond/fishbowl-common/pull/1))

@@ -1,7 +1,7 @@
 ---
 paths:
   - "fishbowl_common/Update*.py"
-  - "tests/Update*_tests.py"
+  - "tests/test_Update*.py"
 ---
 
 # The update flow
