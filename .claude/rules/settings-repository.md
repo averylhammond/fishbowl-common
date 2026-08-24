@@ -12,8 +12,12 @@ which is why the `report_error` default matters (below).
 - **The table stores only text**, which is a constraint the consumers depend on — an app
   persisting a boolean compares the stored string against `str(True)` on the way back rather than
   calling `bool()` on it, since `bool("False")` is `True`.
-- One known defect lives here: **a connection is leaked on every call (#3)**. Fix it here rather
-  than working around it at a call site.
+- **Every method opens its own connection and closes it, via a doubled `with`:**
+  `with closing(sqlite3.connect(self.db_path)) as connection, connection:`. Both managers are
+  load-bearing and neither replaces the other — `closing()` closes the connection, while the
+  connection's own context manager only commits or rolls back. Dropping the wrapper leaks a
+  connection on every call, which is what #3 was. A new method touching the database uses the
+  same pairing.
 
 ## The `report_error` pattern
 

@@ -20,14 +20,16 @@ def settings_repo():
     Returns:
         types.SimpleNamespace: Holds the constructed repository (`repo`), the
             patched sqlite3.connect (`connect`), the connection object yielded by
-            the `with` statement (`connection`), the injected mock database path
+            the `with` statement (`connection`, the same object connect returned,
+            since closing() yields what it wraps), the injected mock database path
             (`db_path`), and the mocked error reporter (`report_error`).
     """
 
     with patch("fishbowl_common.SettingsRepository.sqlite3.connect") as mock_connect:
 
-        # The object bound by `with sqlite3.connect(...) as connection`
-        mock_connection = mock_connect.return_value.__enter__.return_value
+        # The object bound by `with closing(sqlite3.connect(...)) as connection`.
+        # closing() yields the object it wraps, so this is what connect returned.
+        mock_connection = mock_connect.return_value
 
         # The database path is injected rather than imported, so a mock stands in
         # for it and lets tests assert on the directory-creation call.
@@ -66,6 +68,21 @@ def test_init_creates_data_dir_and_settings_table(settings_repo):
     settings_repo.connection.execute.assert_called_once_with(
         "CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)"
     )
+
+
+def test_init_closes_the_connection(settings_repo):
+    """
+    Verifies that initializing the database closes its connection rather than
+    leaving it open, since sqlite3's connection context manager only commits or
+    rolls back.
+
+    Args:
+        settings_repo (pytest.fixture): Provides the repository and its mocks
+    """
+
+    # The fixture's construction is the only call, so one close is expected
+    settings_repo.connection.close.assert_called_once()
+
 
 
 def test_initialize_database_error_is_reported(settings_repo):
@@ -148,6 +165,24 @@ def test_get_all_settings_empty_returns_empty_dict(settings_repo):
     assert settings_repo.repo.get_all_settings() == {}
 
 
+def test_get_all_settings_closes_the_connection(settings_repo):
+    """
+    Verifies that reading the settings closes its connection rather than leaving
+    it open.
+
+    Args:
+        settings_repo (pytest.fixture): Provides the repository and its mocks
+    """
+
+    # Discard the close the fixture's own construction performed
+    settings_repo.connection.close.reset_mock()
+
+    settings_repo.repo.get_all_settings()
+
+    settings_repo.connection.close.assert_called_once()
+
+
+
 def test_get_all_settings_error_reports_and_returns_empty(settings_repo):
     """
     Verifies that a sqlite3 failure while reading settings is reported and results
@@ -186,6 +221,25 @@ def test_save_setting_upserts_key_and_value(settings_repo):
     )
 
 
+def test_save_setting_closes_the_connection(settings_repo):
+    """
+    Verifies that saving a setting closes its connection rather than leaving it
+    open, which matters most here: both apps write a setting on every preference
+    change.
+
+    Args:
+        settings_repo (pytest.fixture): Provides the repository and its mocks
+    """
+
+    # Discard the close the fixture's own construction performed
+    settings_repo.connection.close.reset_mock()
+
+    settings_repo.repo.save_setting("theme", "Forest")
+
+    settings_repo.connection.close.assert_called_once()
+
+
+
 def test_save_setting_error_is_reported(settings_repo):
     """
     Verifies that a sqlite3 failure while saving a setting is surfaced through the
@@ -200,3 +254,23 @@ def test_save_setting_error_is_reported(settings_repo):
     settings_repo.repo.save_setting("theme", "Forest")
 
     settings_repo.report_error.assert_called_once()
+
+
+def test_save_setting_closes_the_connection_on_error(settings_repo):
+    """
+    Verifies that a failed write still closes its connection. The connection's own
+    context manager unwinds first to roll back, and this pins that the close
+    wrapped around it is not skipped on the way out.
+
+    Args:
+        settings_repo (pytest.fixture): Provides the repository and its mocks
+    """
+
+    settings_repo.connection.execute.side_effect = sqlite3.Error("boom")
+
+    # Discard the close the fixture's own construction performed
+    settings_repo.connection.close.reset_mock()
+
+    settings_repo.repo.save_setting("theme", "Forest")
+
+    settings_repo.connection.close.assert_called_once()
