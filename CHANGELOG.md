@@ -28,8 +28,35 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
   key updates its row instead of adding a second one.
   ([#11](https://github.com/averylhammond/fishbowl-common/issues/11))
 
+### Added
+
+- `UpdateChecker` now records why a check failed in `last_error`, as one of the
+  `CHECK_ERROR_RATE_LIMITED` / `CHECK_ERROR_HTTP` / `CHECK_ERROR_NETWORK` /
+  `CHECK_ERROR_RESPONSE` values exported from the package root. The check still fails
+  silently by returning `None`, so nothing an app already does changes; a caller that wants to
+  tell a throttled check apart from an offline machine can now read it. `UpdateCoordinator`
+  does, and a manual check that was rate limited no longer sends the user after their internet
+  connection. ([#6](https://github.com/averylhammond/fishbowl-common/issues/6))
+
 ### Fixed
 
+- `UpdateDownloader` now sends the same `User-Agent` on both of its requests — the checksums
+  fetch and the installer download — instead of going out as `Python-urllib`, which the
+  filtering proxies these apps are deployed behind routinely refuse. Those two requests move
+  the bytes that land on a customer's disk, so the check identifying itself while they did not
+  was the more dangerous half of the gap. Both also catch `urllib.error.HTTPError` ahead of
+  `URLError` now, and record why they failed in `last_error` — one of `DOWNLOAD_ERROR_HTTP`,
+  `DOWNLOAD_ERROR_NETWORK`, `DOWNLOAD_ERROR_IO`, `DOWNLOAD_ERROR_NO_DIGEST`,
+  `DOWNLOAD_ERROR_SIZE` or `DOWNLOAD_ERROR_DIGEST`. `UpdateCoordinator` copies that reason to
+  `last_download_error` before the outcome crosses to the GUI thread, since it builds the
+  downloader itself and never hands it out.
+  ([#6](https://github.com/averylhammond/fishbowl-common/issues/6))
+- `UpdateChecker` now sends a `User-Agent`, `Accept: application/vnd.github+json` and
+  `X-GitHub-Api-Version` with its request, which GitHub's API documents as required and can
+  refuse a request without. It also catches `urllib.error.HTTPError` ahead of `URLError`, so a
+  403 from the unauthenticated rate limit (60 requests/hour/IP — one shared budget for a whole
+  office, and both apps check on every launch) is no longer indistinguishable from being
+  offline. ([#6](https://github.com/averylhammond/fishbowl-common/issues/6))
 - `SettingsRepository.initialize_database()` now reports an `OSError` from creating the
   data directory through `report_error` instead of letting it escape the `sqlite3.Error`
   handler. A read-only or permission-denied data directory crashed the consuming app at

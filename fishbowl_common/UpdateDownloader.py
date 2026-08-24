@@ -5,6 +5,8 @@ import urllib.request
 from pathlib import Path
 from typing import Callable
 
+from fishbowl_common.UpdateChecker import USER_AGENT
+
 # Cap how long a download may block. It is far longer than the update check's
 # timeout because this transfers a whole installer rather than a JSON document, but
 # it still bounds a stalled connection instead of hanging the worker thread forever.
@@ -19,12 +21,45 @@ CHUNK_SIZE = 64 * 1024
 # file whose first field is not one of these is not a digest line.
 SHA256_HEX_LENGTH = 64
 
+# Sent with both requests. Only the User-Agent, since these fetch a file rather
+# than the API: an Accept pinning a media type would constrain the redirect to the
+# asset host for nothing. GitHub documents the User-Agent as required, and the
+# filtering proxies these apps are deployed behind routinely refuse the
+# "Python-urllib" default.
+REQUEST_HEADERS = {"User-Agent": USER_AGENT}
+
+# What UpdateDownloader.last_error carries after a failed fetch or download. The
+# calls still fail silently by returning None; this is what lets a caller tell a
+# transfer that never started from one that arrived corrupted - and the digest
+# mismatch, the one failure worth treating as more than bad luck, from both.
+DOWNLOAD_ERROR_HTTP = "http"
+DOWNLOAD_ERROR_NETWORK = "network"
+DOWNLOAD_ERROR_IO = "io"
+DOWNLOAD_ERROR_NO_DIGEST = "no_digest"
+DOWNLOAD_ERROR_SIZE = "size"
+DOWNLOAD_ERROR_DIGEST = "digest"
+
 
 # UpdateDownloader fetches a release's installer and proves it is the file the
 # release published before anything executes it. Like the rest of this package it
 # never raises: every failure - network, disk, a size or digest that does not match
 # - comes back as None, so a caller can fall back to the manual download flow.
 class UpdateDownloader:
+
+    ###########################################################################
+    ###                   UpdateDownloader -> __init__()                    ###
+    ###########################################################################
+    def __init__(self):
+        """
+        Initializes the UpdateDownloader. It takes nothing: every value it works
+        from arrives with the call, and it reaches the network and the disk
+        directly.
+        """
+
+        # Why the most recent fetch or download failed, as one of the
+        # DOWNLOAD_ERROR_* values, or None while nothing has failed. Set on every
+        # call to fetch_expected_sha256() and download().
+        self.last_error: str | None = None
 
     ###########################################################################
     ###             UpdateDownloader -> fetch_expected_sha256()             ###
@@ -46,18 +81,33 @@ class UpdateDownloader:
 
         Returns:
             str | None: The published digest in lowercase hex, or None if the file
-                could not be fetched or lists no digest for that asset.
+                could not be fetched or lists no digest for that asset. Why it
+                failed is recorded in last_error.
         """
 
+        self.last_error = None
+
         try:
+            request = urllib.request.Request(checksums_url, headers=REQUEST_HEADERS)
+
             with urllib.request.urlopen(
-                checksums_url, timeout=DOWNLOAD_TIMEOUT_SECONDS
+                request, timeout=DOWNLOAD_TIMEOUT_SECONDS
             ) as response:
                 contents = response.read().decode("utf-8", "replace")
-        except (urllib.error.URLError, OSError, ValueError):
-            # URLError/OSError: network or HTTP failure. ValueError: a response
-            # body that is not decodable text.
-            return None
+        except urllib.error.HTTPError:
+            # The host answered with a status instead of the file. Caught ahead of
+            # URLError (its base class) so a refusal - a proxy blocking the
+            # download, an asset withdrawn from the release - is not filed as an
+            # unreachable network.
+            return self._fail(DOWNLOAD_ERROR_HTTP)
+        except urllib.error.URLError:
+            # The host was never reached: no route, DNS failure, refused connection
+            # or a request that outran DOWNLOAD_TIMEOUT_SECONDS.
+            return self._fail(DOWNLOAD_ERROR_NETWORK)
+        except (OSError, ValueError):
+            # A socket error raised outside URLError, or a response body that could
+            # not be read as expected.
+            return self._fail(DOWNLOAD_ERROR_IO)
 
         for line in contents.splitlines():
             fields = line.split()
@@ -74,7 +124,9 @@ class UpdateDownloader:
             if published_name == asset_name:
                 return digest.lower()
 
-        return None
+        # The file arrived intact and simply does not cover this asset, which is
+        # what stops an unverifiable installer from ever being downloaded.
+        return self._fail(DOWNLOAD_ERROR_NO_DIGEST)
 
     ###########################################################################
     ###                    UpdateDownloader -> download()                   ###
@@ -108,15 +160,18 @@ class UpdateDownloader:
 
         Returns:
             Path | None: The verified file, or None if the download or either check
-                failed.
+                failed. Why it failed is recorded in last_error.
         """
 
+        self.last_error = None
         digest = hashlib.sha256()
         downloaded = 0
 
         try:
+            request = urllib.request.Request(url, headers=REQUEST_HEADERS)
+
             with urllib.request.urlopen(
-                url, timeout=DOWNLOAD_TIMEOUT_SECONDS
+                request, timeout=DOWNLOAD_TIMEOUT_SECONDS
             ) as response:
                 total = self._response_size(response, expected_size)
 
@@ -137,19 +192,25 @@ class UpdateDownloader:
 
                         if progress is not None:
                             progress(downloaded, total)
-        except (urllib.error.URLError, OSError, ValueError):
-            # URLError/OSError: network, HTTP or disk failure. ValueError: a
-            # response whose body could not be read as expected.
-            self._discard(destination)
-            return None
+        except urllib.error.HTTPError:
+            # The host answered with a status instead of the file, so nothing was
+            # ever transferred. Caught ahead of URLError, its base class.
+            return self._discard_and_fail(destination, DOWNLOAD_ERROR_HTTP)
+        except urllib.error.URLError:
+            # The host was never reached, or the connection dropped mid-transfer.
+            return self._discard_and_fail(destination, DOWNLOAD_ERROR_NETWORK)
+        except (OSError, ValueError):
+            # The bytes did not make it from the socket to the file: a full or
+            # unwritable temp directory, or a socket error raised outside URLError.
+            # The two are not separated because both arrive here as a bare OSError,
+            # and telling them apart would mean splitting the read/write loop.
+            return self._discard_and_fail(destination, DOWNLOAD_ERROR_IO)
 
         if expected_size is not None and downloaded != expected_size:
-            self._discard(destination)
-            return None
+            return self._discard_and_fail(destination, DOWNLOAD_ERROR_SIZE)
 
         if digest.hexdigest() != (expected_sha256 or "").lower():
-            self._discard(destination)
-            return None
+            return self._discard_and_fail(destination, DOWNLOAD_ERROR_DIGEST)
 
         return destination
 
@@ -201,6 +262,42 @@ class UpdateDownloader:
             pass
 
         return expected_size or 0
+
+    ###########################################################################
+    ###                     UpdateDownloader -> _fail()                    ###
+    ###########################################################################
+    def _fail(self, reason: str) -> None:
+        """
+        Records why the call failed and yields the silent failure the caller sees.
+
+        Args:
+            reason (str): One of the DOWNLOAD_ERROR_* values.
+
+        Returns:
+            None: Always, so an except block can `return self._fail(...)`.
+        """
+
+        self.last_error = reason
+        return None
+
+    ###########################################################################
+    ###               UpdateDownloader -> _discard_and_fail()              ###
+    ###########################################################################
+    def _discard_and_fail(self, destination: Path, reason: str) -> None:
+        """
+        Deletes an unusable download and records why it was unusable, so no failure
+        path can record a reason while leaving something runnable on disk.
+
+        Args:
+            destination (Path): The file to delete; it need not exist.
+            reason (str): One of the DOWNLOAD_ERROR_* values.
+
+        Returns:
+            None: Always, matching what a failed download returns.
+        """
+
+        self._discard(destination)
+        return self._fail(reason)
 
     ###########################################################################
     ###                   UpdateDownloader -> _discard()                   ###

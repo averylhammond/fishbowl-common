@@ -3,7 +3,13 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
 
+from fishbowl_common.UpdateChecker import (
+    CHECK_ERROR_HTTP,
+    CHECK_ERROR_NETWORK,
+    CHECK_ERROR_RATE_LIMITED,
+)
 from fishbowl_common.UpdateCoordinator import UpdateCoordinator, UpdateDisplay
+from fishbowl_common.UpdateDownloader import DOWNLOAD_ERROR_HTTP
 
 # Values injected into the coordinator under test. The version is only ever compared
 # by UpdateChecker (which is mocked here) and echoed back in the up-to-date message,
@@ -158,9 +164,14 @@ def test_run_check_schedules_the_result_on_the_gui_thread(coordinator):
     )
     mock_checker_cls.return_value.check_for_update.assert_called_once_with()
 
-    # Nothing is presented from the worker thread; the result is marshalled instead
+    # Nothing is presented from the worker thread; the result is marshalled instead,
+    # together with why the check failed, read on the thread that owns the checker
     coordinator.display.after.assert_called_once_with(
-        0, coordinator.coordinator._handle_result, mock_result, True
+        0,
+        coordinator.coordinator._handle_result,
+        mock_result,
+        True,
+        mock_checker_cls.return_value.last_error,
     )
     coordinator.display.show_update_available.assert_not_called()
 
@@ -326,7 +337,29 @@ def test_handle_result_reports_up_to_date_on_a_manual_check(coordinator):
 def test_handle_result_reports_failure_on_a_manual_check(coordinator):
     """
     Verifies that a manual check whose fetch failed (a None result) reports that
-    failure through a popup rather than silently doing nothing.
+    failure through a popup rather than silently doing nothing, and that an
+    unreachable network - or a caller naming no reason at all - is reported as the
+    connection problem it most likely is.
+
+    Args:
+        coordinator (pytest.fixture): Provides the coordinator and its mock display
+    """
+
+    coordinator.coordinator._handle_result(None, manual=True, error=CHECK_ERROR_NETWORK)
+
+    coordinator.display.show_popup.assert_called_once()
+    assert coordinator.display.show_popup.call_args.args[0] == "Update Check Failed"
+    assert "internet connection" in coordinator.display.show_popup.call_args.args[1]
+    coordinator.display.show_update_available.assert_not_called()
+
+
+def test_handle_result_reports_an_unexplained_failure_as_a_connection_problem(
+    coordinator,
+):
+    """
+    Verifies that a failure reported with no reason still gets the connection
+    message, so a caller that never looked at the checker's last_error sees exactly
+    what it saw before the reasons existed.
 
     Args:
         coordinator (pytest.fixture): Provides the coordinator and its mock display
@@ -335,8 +368,47 @@ def test_handle_result_reports_failure_on_a_manual_check(coordinator):
     coordinator.coordinator._handle_result(None, manual=True)
 
     coordinator.display.show_popup.assert_called_once()
-    assert coordinator.display.show_popup.call_args.args[0] == "Update Check Failed"
-    coordinator.display.show_update_available.assert_not_called()
+    assert "internet connection" in coordinator.display.show_popup.call_args.args[1]
+
+
+def test_handle_result_blames_a_rate_limit_rather_than_the_connection(coordinator):
+    """
+    Verifies that a rate-limited check is reported as GitHub throttling this
+    network. Nothing is wrong with the machine and the same check succeeds later
+    untouched, so the connection message would send the user after a problem they
+    do not have.
+
+    Args:
+        coordinator (pytest.fixture): Provides the coordinator and its mock display
+    """
+
+    coordinator.coordinator._handle_result(
+        None, manual=True, error=CHECK_ERROR_RATE_LIMITED
+    )
+
+    coordinator.display.show_popup.assert_called_once()
+    message = coordinator.display.show_popup.call_args.args[1]
+    assert "limiting" in message
+    assert "internet connection" not in message
+
+
+def test_handle_result_reports_a_refused_request_without_blaming_the_connection(
+    coordinator,
+):
+    """
+    Verifies that GitHub answering with an error status is reported as GitHub being
+    unable to answer, so the mapping covers more than the one rate-limit case.
+
+    Args:
+        coordinator (pytest.fixture): Provides the coordinator and its mock display
+    """
+
+    coordinator.coordinator._handle_result(None, manual=True, error=CHECK_ERROR_HTTP)
+
+    coordinator.display.show_popup.assert_called_once()
+    message = coordinator.display.show_popup.call_args.args[1]
+    assert "GitHub" in message
+    assert "internet connection" not in message
 
 
 ###############################################################################
@@ -529,3 +601,59 @@ def test_run_install_reports_failure_when_the_installer_will_not_start(
     coordinator.coordinator._run_install(_result(), MagicMock(), on_finished)
 
     coordinator.display.after.assert_called_once_with(0, on_finished, False)
+
+
+@patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
+@patch("fishbowl_common.UpdateCoordinator.UpdateDownloader")
+def test_run_install_carries_the_download_failure_reason(
+    mock_downloader_cls, _mock_installer_cls, coordinator
+):
+    """
+    Verifies that why the download failed is copied off the downloader before the
+    outcome crosses to the GUI thread, so an application whose finished callback
+    fires with False can say what went wrong rather than only that something did.
+    The downloader itself is built in here and never handed out, so this attribute
+    is the only way that reason leaves the coordinator.
+
+    Args:
+        mock_downloader_cls (unittest.mock.MagicMock): Mocks UpdateDownloader
+        _mock_installer_cls (unittest.mock.MagicMock): Mocks UpdateInstaller
+        coordinator (pytest.fixture): Provides the coordinator and its mock display
+    """
+
+    downloader = mock_downloader_cls.return_value
+    downloader.fetch_expected_sha256.return_value = None
+    downloader.last_error = DOWNLOAD_ERROR_HTTP
+
+    coordinator.coordinator._run_install(_result(), MagicMock(), MagicMock())
+
+    assert coordinator.coordinator.last_download_error == DOWNLOAD_ERROR_HTTP
+
+
+@patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
+@patch("fishbowl_common.UpdateCoordinator.UpdateDownloader")
+def test_run_install_carries_no_reason_when_the_download_succeeded(
+    mock_downloader_cls, mock_installer_cls, coordinator
+):
+    """
+    Verifies that a download that worked clears any earlier reason, so an installer
+    that then refuses to start is never reported with a stale explanation for a
+    download that was fine.
+
+    Args:
+        mock_downloader_cls (unittest.mock.MagicMock): Mocks UpdateDownloader
+        mock_installer_cls (unittest.mock.MagicMock): Mocks UpdateInstaller
+        coordinator (pytest.fixture): Provides the coordinator and its mock display
+    """
+
+    coordinator.coordinator.last_download_error = DOWNLOAD_ERROR_HTTP
+
+    downloader = mock_downloader_cls.return_value
+    downloader.fetch_expected_sha256.return_value = "abc123"
+    downloader.download.return_value = Path("/tmp/fishbowl-update/App_Setup.exe")
+    downloader.last_error = None
+    mock_installer_cls.return_value.launch.return_value = False
+
+    coordinator.coordinator._run_install(_result(), MagicMock(), MagicMock())
+
+    assert coordinator.coordinator.last_download_error is None

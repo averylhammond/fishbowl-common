@@ -2,7 +2,13 @@ import threading
 from functools import partial
 from typing import Callable, Protocol
 
-from fishbowl_common.UpdateChecker import UpdateChecker, UpdateCheckResult
+from fishbowl_common.UpdateChecker import (
+    CHECK_ERROR_HTTP,
+    CHECK_ERROR_RATE_LIMITED,
+    CHECK_ERROR_RESPONSE,
+    UpdateChecker,
+    UpdateCheckResult,
+)
 from fishbowl_common.UpdateDownloader import UpdateDownloader
 from fishbowl_common.UpdateInstaller import UpdateInstaller
 
@@ -14,6 +20,34 @@ FinishedCallback = Callable[[bool], None]
 # Handed to the display when the update can be installed in place: calling it with
 # a progress and a completion callback starts the download.
 StartInstall = Callable[[ProgressCallback, FinishedCallback], None]
+
+# Title every failed manual check is reported under, whatever the reason for it.
+CHECK_FAILED_TITLE = "Update Check Failed"
+
+# What the user is told when a manual check failed, keyed by the checker's
+# last_error. A rate-limited check earns its own wording because nothing is wrong
+# with the machine and the same check succeeds later untouched, so sending the user
+# after their internet connection sends them after a problem they do not have.
+CHECK_FAILED_MESSAGES = {
+    CHECK_ERROR_RATE_LIMITED: (
+        "GitHub is temporarily limiting update checks from this network. Please "
+        "try again later."
+    ),
+    CHECK_ERROR_HTTP: (
+        "GitHub could not be asked for the latest release. Please try again later."
+    ),
+    CHECK_ERROR_RESPONSE: (
+        "GitHub's answer to the update check could not be read. Please try again "
+        "later."
+    ),
+}
+
+# Used when the check failed for any other reason - including a caller that reported
+# none - where an unreachable network is the likeliest explanation.
+DEFAULT_CHECK_FAILED_MESSAGE = (
+    "Could not check for updates. Please check your internet connection and try "
+    "again."
+)
 
 
 # UpdateDisplay describes the narrow slice of an application window the coordinator
@@ -99,6 +133,12 @@ class UpdateCoordinator:
         self.display = display
         self.asset_pattern = asset_pattern
 
+        # Why the last install flow's download failed, as one of UpdateDownloader's
+        # DOWNLOAD_ERROR_* values, for an app that wants to say more than "it
+        # failed". None when the download succeeded - including when the installer
+        # itself then refused to start.
+        self.last_download_error: str | None = None
+
     ###########################################################################
     ###                     UpdateCoordinator -> start()                    ###
     ###########################################################################
@@ -134,18 +174,25 @@ class UpdateCoordinator:
                 surface "up to date"/failure feedback.
         """
 
-        result = UpdateChecker(
+        checker = UpdateChecker(
             current_version=self.current_version,
             repo=self.repo,
             asset_pattern=self.asset_pattern,
-        ).check_for_update()
-        self.display.after(0, self._handle_result, result, manual)
+        )
+        result = checker.check_for_update()
+
+        # Why the check failed is read here and carried across, so the GUI thread
+        # never reaches back into a checker this thread owns.
+        self.display.after(0, self._handle_result, result, manual, checker.last_error)
 
     ###########################################################################
     ###                UpdateCoordinator -> _handle_result()                ###
     ###########################################################################
     def _handle_result(
-        self, result: UpdateCheckResult | None, manual: bool = False
+        self,
+        result: UpdateCheckResult | None,
+        manual: bool = False,
+        error: str | None = None,
     ) -> None:
         """
         Handles the outcome of an update check on the GUI thread.
@@ -162,6 +209,8 @@ class UpdateCoordinator:
                 UpdateChecker.check_for_update(), or None if the check failed.
             manual (bool): True when the check was triggered manually by the user,
                 enabling the up-to-date/failure feedback.
+            error (str | None): The checker's last_error, naming why the check
+                failed, or None when it did not fail (or did not say).
         """
 
         if result and result.update_available:
@@ -174,9 +223,8 @@ class UpdateCoordinator:
         elif manual:
             if result is None:
                 self.display.show_popup(
-                    "Update Check Failed",
-                    "Could not check for updates. Please check your internet "
-                    "connection and try again.",
+                    CHECK_FAILED_TITLE,
+                    CHECK_FAILED_MESSAGES.get(error, DEFAULT_CHECK_FAILED_MESSAGE),
                 )
             else:
                 self.display.show_popup(
@@ -281,6 +329,10 @@ class UpdateCoordinator:
                     0, on_progress, received, total
                 ),
             )
+
+        # Read on this thread and stored before the outcome crosses over, so the
+        # GUI thread never reaches back into a downloader this thread owns.
+        self.last_download_error = downloader.last_error
 
         started = installer is not None and UpdateInstaller().launch(
             installer, installer.with_name(f"{installer.stem}_install.log")

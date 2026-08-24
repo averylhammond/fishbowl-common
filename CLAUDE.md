@@ -67,8 +67,8 @@ does not pull in tkinter.
 | `SettingsRepository` | SQLite key/value store for user settings. **Stores only text.** |
 | `version_utils` | `parse_version()` / `compare_versions()`, two module-level functions. **Neither ever raises.** |
 | `PatchNotes` | Reads a shipped changelog and returns every section in a version *range*, newest first. |
-| `UpdateChecker` | Queries the GitHub releases API; returns an `UpdateCheckResult` or `None`. |
-| `UpdateDownloader` | Streams an asset and verifies size + SHA-256 before the caller executes it. |
+| `UpdateChecker` | Queries the GitHub releases API; returns an `UpdateCheckResult` or `None`, and names the failure in `last_error`. |
+| `UpdateDownloader` | Streams an asset and verifies size + SHA-256 before the caller executes it; names the failure in `last_error`. |
 | `UpdateInstaller` | Starts a downloaded Inno Setup installer silently and detached (Windows only). |
 | `UpdateCoordinator` | The whole update feature as one object, and the only update class an app constructs. |
 | `UpdateDisplay` | A `typing.Protocol` (in `UpdateCoordinator.py`) — what keeps the coordinator headless. |
@@ -100,6 +100,8 @@ consistently with the main window behind it.
   never re-raising. `SettingsRepository` is the only class carrying one today. **The update
   classes and `PatchNotes` deliberately have none** — they return `None`/`False`/`""` silently,
   and a silent startup check on an offline machine is the designed behavior, not an oversight.
+  `UpdateChecker.last_error` is not a hole in that rule: it *records* why the last check failed
+  for a caller that asks, and reports nothing to anyone on its own.
 - **Zero runtime dependencies.** `dependencies = []`, and every import in both halves is stdlib.
   `README.md:11-12` advertises this, and both apps ship as PyInstaller onefile builds where each
   added dependency is payload the customer downloads. **Taking a runtime dependency is a
