@@ -8,13 +8,12 @@ paths:
 
 ## The three workflows
 
-Two run on `pull_request` to `main` and `workflow_dispatch`; the third runs only on a pushed `v*`
-tag. All three are `ubuntu-latest` with `actions/setup-python@v5` at `3.11.9` and
-`pip install -e ".[dev,gui]"`.
+Two run on `pull_request` to `main` and `workflow_dispatch`, and `code-coverage.yml` also on
+`push` to `main`; the third runs only on a pushed `v*` tag. All three are `ubuntu-latest` with
+`actions/setup-python@v5` at `3.11.9` and `pip install -e ".[dev,gui]"`.
 
-`code-coverage.yml` sets `fail_ci_if_error: false` on `codecov/codecov-action@v5` deliberately —
-the `--cov-fail-under` gate is what enforces coverage, so a Codecov outage must not mask it by
-failing the job for an unrelated reason. It needs `CODECOV_TOKEN`.
+`code-coverage.yml` needs a `CODECOV_TOKEN` repo secret. Its triggers, its gate and the two
+flags on the Codecov upload are all load-bearing — see Coverage below.
 
 ## `release.yml` — four load-bearing things
 
@@ -45,11 +44,19 @@ the release.
 **Every other measured module is at 100%**, so the gate is headroom rather than a target to climb
 toward — a new module landing untested should fail the check, not quietly lower the average.
 
-Two divergences from the apps' equivalent workflows are **gaps, not decisions**, both tracked in
-#11: the gate is **80 here against 90 in both apps**, and there is **no `push: branches: [main]`
-trigger**, so Codecov records no main-branch baseline, the badge never updates and PR coverage
-comments have nothing to compare against. Do not read either as an intentional mirror of the
-apps' files, and do not fix one without the other.
+The gate is **90, matching both apps** (#11). It was 80 here until the shared package — the piece
+with the most consumers and the widest blast radius — stopped holding the loosest gate of the
+three repos. Do not lower it to accommodate a new module.
+
+`code-coverage.yml` triggers on **`push` to `main` as well as `pull_request`** (#11). The push run
+is what gives Codecov a main-branch baseline: without it the badge never updates and the PR
+coverage comment has nothing to diff against. Removing that trigger breaks the PR comment, not
+just the badge.
+
+The Codecov upload carries **both `if: always()` and `fail_ci_if_error: false`**, which sound
+redundant and are not. `if: always()` runs the upload even when the pytest step failed the gate —
+which is exactly when the PR coverage comment is worth reading. `fail_ci_if_error: false` keeps a
+Codecov outage from failing the job for an unrelated reason and masking the gate's own verdict.
 
 One further gap is tracked rather than fixed: the packaging metadata has no `py.typed`, `LICENSE`
 or `__version__` — the annotations are written throughout and then discarded at the package

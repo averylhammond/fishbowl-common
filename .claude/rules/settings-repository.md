@@ -34,9 +34,20 @@ as `(title, message)` from inside one `except` block per method, never re-raisin
   no-op default. The update classes deliberately have none; see
   `.claude/rules/update-classes.md`.
 
-## The test gap
+## The two halves of `tests/test_SettingsRepository.py`
 
-`tests/test_SettingsRepository.py` patches `sqlite3.connect` and asserts the SQL as literal
-strings, so **the tests would still pass if the schema were wrong** — nothing ever executes it. A
-`tmp_path` round-trip covering save-then-read and the upsert is tracked as #11, and is the one
-place a real (temporary) file is the right call.
+This is the one file in the suite that mixes mocked and real database tests, and the split is
+deliberate (#11).
+
+- **The mocked half** patches `fishbowl_common.SettingsRepository.sqlite3.connect` and asserts the
+  SQL as literal strings. It covers what a real database will not readily produce: each `except`
+  branch reporting through `report_error`, the `OSError` from `mkdir`, and `connection.close()`
+  being called on every path including a failed write.
+- **The real half** uses the `real_settings_repo(tmp_path)` fixture with nothing patched, and is
+  the only thing that executes the SQL. It pins the schema via `PRAGMA table_info(settings)`, the
+  save-then-read round trip, and that the upsert leaves **one** row rather than two.
+
+**A change to the schema or to any SQL in this class gets a `tmp_path` test that executes it**,
+not another literal-string assertion. The literal assertions alone cannot catch a wrong schema:
+rename a column in both the source and the expected string and the mocked half stays green, which
+is precisely the hole #11 closed.

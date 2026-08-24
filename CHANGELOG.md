@@ -13,6 +13,21 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
 
 ## [Unreleased]
 
+### Changed
+
+- The coverage gate is now 90% rather than 80%, matching both consuming apps, and the
+  coverage workflow now runs on pushes to `main` as well as pull requests. Without the push
+  run Codecov held no main-branch baseline, so the README badge never refreshed and the PR
+  coverage comment had nothing to compare against. The Codecov upload also runs when the gate
+  fails, which is when that comment is most worth reading.
+  ([#11](https://github.com/averylhammond/fishbowl-common/issues/11))
+- `SettingsRepository`'s SQL is now executed by tests rather than only asserted as text. Every
+  existing test mocked `sqlite3.connect` and compared the statements to literal strings, so the
+  suite would have passed against a wrong schema. Four tests over a real temporary database now
+  pin the settings table's columns, the save-then-read round trip, and that saving an existing
+  key updates its row instead of adding a second one.
+  ([#11](https://github.com/averylhammond/fishbowl-common/issues/11))
+
 ### Fixed
 
 - `SettingsRepository.initialize_database()` now reports an `OSError` from creating the

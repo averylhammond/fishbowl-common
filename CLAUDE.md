@@ -122,7 +122,10 @@ and `tests/gui/` for `fishbowl_common/gui/`. `tests/__init__.py` and `tests/gui/
 empty but load-bearing; there is deliberately **no `conftest.py`**.
 
 Every unit test exercises exactly **one** class or function, with all collaborators mocked. Never
-let a unit test touch the real network, a real GUI, or the real filesystem.
+let a unit test touch the real network, a real GUI, or the real filesystem — with exactly one
+carve-out: `SettingsRepository`'s SQL is proved against a real `tmp_path` database, because the
+SQL genuinely is the thing under test. See `.claude/rules/settings-repository.md`; do not read it
+as license for a second exception.
 
 **Before writing a test, open the reference implementation and mirror it** —
 `tests/test_UpdateCoordinator.py` for a class with injected collaborators,
@@ -131,13 +134,13 @@ let a unit test touch the real network, a real GUI, or the real filesystem.
 
 ## CI
 
-Three `ubuntu-latest` workflows. Two run on `pull_request` to `main` and `workflow_dispatch`; the
-third runs only on a pushed `v*` tag.
+Three `ubuntu-latest` workflows. Two run on `pull_request` to `main` and `workflow_dispatch`,
+`code-coverage.yml` also on `push` to `main`; the third runs only on a pushed `v*` tag.
 
 | Workflow | What it runs |
 | --- | --- |
 | `unit-tests.yml` | bare `pytest` |
-| `code-coverage.yml` | `pytest --cov` with `--cov-fail-under=80`, then `codecov/codecov-action@v5` |
+| `code-coverage.yml` | `pytest --cov` with `--cov-fail-under=90`, then `codecov/codecov-action@v5` |
 | `release.yml` | two `::error::` gates, `pytest`, `python -m build`, a wheel smoke-install, then `gh release create` |
 
 Coverage omits `color_theme.py` and `font_settings.py` as inert styling data; **every other

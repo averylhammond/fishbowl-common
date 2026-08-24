@@ -1,5 +1,6 @@
 import sqlite3
 import pytest
+from contextlib import closing
 from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
 
@@ -7,7 +8,7 @@ from fishbowl_common.SettingsRepository import SettingsRepository
 
 
 ###############################################################################
-###                   SettingsRepository -> Test Fixture                    ###
+###                  SettingsRepository -> Test Fixtures                    ###
 ###############################################################################
 @pytest.fixture
 def settings_repo():
@@ -45,6 +46,54 @@ def settings_repo():
             db_path=mock_db_path,
             report_error=report_error,
         )
+
+
+@pytest.fixture
+def real_settings_repo(tmp_path):
+    """
+    Builds a SettingsRepository over a real SQLite file in a temporary directory,
+    with nothing patched, so the SQL the other tests assert as literal strings is
+    actually executed. The database path is nested one level below tmp_path so
+    initialize_database() has a directory to create.
+
+    Args:
+        tmp_path (pytest.fixture): Per-test temporary directory, outside the repo
+
+    Returns:
+        types.SimpleNamespace: Holds the constructed repository (`repo`), the real
+            database path (`db_path`), and the mocked error reporter
+            (`report_error`), so a test can assert no failure was swallowed.
+    """
+
+    db_path = tmp_path / "data" / "settings.db"
+    report_error = MagicMock()
+
+    yield SimpleNamespace(
+        repo=SettingsRepository(db_path=db_path, report_error=report_error),
+        db_path=db_path,
+        report_error=report_error,
+    )
+
+
+###############################################################################
+###                    SettingsRepository -> Test Helpers                   ###
+###############################################################################
+def _query(db_path, sql: str) -> list:
+    """
+    Reads from the database file directly, so a test can inspect what the
+    repository actually wrote rather than trusting the repository to report it.
+
+    Args:
+        db_path (Path): Location of the SQLite database file to read
+        sql (str): The query to run
+
+    Returns:
+        list: Every row the query returned
+    """
+
+    # The same doubled `with` the repository itself uses
+    with closing(sqlite3.connect(db_path)) as connection, connection:
+        return connection.execute(sql).fetchall()
 
 
 ###############################################################################
@@ -274,3 +323,94 @@ def test_save_setting_closes_the_connection_on_error(settings_repo):
     settings_repo.repo.save_setting("theme", "Forest")
 
     settings_repo.connection.close.assert_called_once()
+
+
+###############################################################################
+###            Tests SettingsRepository -> Real SQLite Behavior             ###
+###############################################################################
+def test_initialize_database_creates_the_settings_schema(real_settings_repo):
+    """
+    Verifies that constructing the repository creates the data directory and a
+    settings table of two TEXT columns keyed on `key`. Every other test in this
+    file mocks sqlite3 and asserts the CREATE TABLE as a string, so this is the
+    only one that would fail if the schema itself were wrong.
+
+    Args:
+        real_settings_repo (pytest.fixture): Provides a repository over a real
+            temporary database file
+    """
+
+    # The nested data directory was created before SQLite opened the file
+    assert real_settings_repo.db_path.exists()
+
+    # PRAGMA table_info yields (cid, name, type, notnull, default, pk) per column
+    columns = [
+        (name, type_, pk)
+        for _, name, type_, _, _, pk in _query(
+            real_settings_repo.db_path, "PRAGMA table_info(settings)"
+        )
+    ]
+
+    # Text-only storage, keyed on `key`, is the contract the consuming apps rely on
+    assert columns == [("key", "TEXT", 1), ("value", "TEXT", 0)]
+
+
+def test_get_all_settings_on_a_fresh_database_returns_empty(real_settings_repo):
+    """
+    Verifies that a freshly created database reads back as no settings, and that
+    the empty dict is the success path rather than a swallowed database failure.
+
+    Args:
+        real_settings_repo (pytest.fixture): Provides a repository over a real
+            temporary database file
+    """
+
+    assert real_settings_repo.repo.get_all_settings() == {}
+
+    real_settings_repo.report_error.assert_not_called()
+
+
+def test_save_then_get_all_settings_round_trips_values(real_settings_repo):
+    """
+    Verifies that settings written through save_setting come back from
+    get_all_settings unchanged, which is the round trip the consuming apps make
+    across a restart.
+
+    Args:
+        real_settings_repo (pytest.fixture): Provides a repository over a real
+            temporary database file
+    """
+
+    real_settings_repo.repo.save_setting("theme", "Ocean")
+    real_settings_repo.repo.save_setting("font_size", "14")
+
+    assert real_settings_repo.repo.get_all_settings() == {
+        "theme": "Ocean",
+        "font_size": "14",
+    }
+
+    real_settings_repo.report_error.assert_not_called()
+
+
+def test_save_setting_updates_an_existing_key_in_place(real_settings_repo):
+    """
+    Verifies that saving a key that already exists replaces its value rather than
+    inserting a second row, which is what the ON CONFLICT clause buys: both apps
+    write the same handful of keys on every preference change.
+
+    Args:
+        real_settings_repo (pytest.fixture): Provides a repository over a real
+            temporary database file
+    """
+
+    real_settings_repo.repo.save_setting("theme", "Ocean")
+    real_settings_repo.repo.save_setting("theme", "Forest")
+
+    # The stored value is the second one
+    assert real_settings_repo.repo.get_all_settings() == {"theme": "Forest"}
+
+    # get_all_settings returns a dict and would hide a duplicate, so the row count
+    # is read from the table itself
+    assert _query(real_settings_repo.db_path, "SELECT COUNT(*) FROM settings") == [(1,)]
+
+    real_settings_repo.report_error.assert_not_called()
