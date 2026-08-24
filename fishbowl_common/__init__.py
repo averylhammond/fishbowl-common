@@ -21,6 +21,7 @@ from fishbowl_common.UpdateDownloader import (
     UpdateDownloader,
 )
 from fishbowl_common.UpdateInstaller import UpdateInstaller
+from fishbowl_common._version import __version__
 from fishbowl_common.version_utils import compare_versions, parse_version
 
 __all__ = [
@@ -44,6 +45,7 @@ __all__ = [
     "UpdateDisplay",
     "UpdateDownloader",
     "UpdateInstaller",
+    "__version__",
     "compare_versions",
     "parse_version",
 ]

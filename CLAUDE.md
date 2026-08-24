@@ -38,7 +38,9 @@ signature is not one PR but three** — here, then `FishbowlInvoiceTool`, then
   `pytest`/`pytest-cov`; the `gui` extra is **empty** and adds no requirements (tkinter ships
   with CPython) — it exists to mark intent.
 - `pyproject.toml` is the whole of the packaging, pytest and coverage configuration. There is no
-  `setup.py`, `setup.cfg`, `.coveragerc` or `pytest.ini`, unlike the two apps.
+  `setup.py`, `setup.cfg`, `.coveragerc` or `pytest.ini`, unlike the two apps. **The version is
+  the one thing it does not hold**: `version` is `dynamic`, read from
+  `fishbowl_common/_version.py`. Bump it there.
 
 ## Common Commands
 
@@ -63,6 +65,7 @@ does not pull in tkinter.
 
 | Module | Role |
 | --- | --- |
+| `_version` | One literal, `__version__`, re-exported from the package root. `pyproject.toml` reads it via `[tool.setuptools.dynamic]`, so the version lives in exactly one place. **Keep it to the bare assignment** — setuptools parses the module rather than importing it only while it stays that simple. |
 | `ArgumentProvider` | Parses `--integration-test` into `integration_test_mode` so an app can run headless with no GUI popups. Reads `sys.argv` directly and cannot yet be handed an `argv` (#8). |
 | `SettingsRepository` | SQLite key/value store for user settings. **Stores only text.** |
 | `version_utils` | `parse_version()` / `compare_versions()`, two module-level functions. **Neither ever raises.** |

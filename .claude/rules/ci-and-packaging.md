@@ -2,6 +2,7 @@
 paths:
   - ".github/workflows/**"
   - "pyproject.toml"
+  - "fishbowl_common/_version.py"
 ---
 
 # CI and packaging
@@ -17,17 +18,23 @@ flags on the Codecov upload are all load-bearing — see Coverage below.
 
 ## `release.yml` — four load-bearing things
 
-- **The tag must equal `pyproject.toml`'s `version`**, read with `tomllib` (stdlib on 3.11, so
-  the gate needs nothing installed). This is the apps' own check with the version source swapped,
-  since there is no `constants.py` here.
+- **The tag must equal `fishbowl_common/_version.py`'s `__version__`**, imported directly. This
+  is the apps' own check with the version source swapped: `_version.py` is this package's
+  `constants.py:VERSION`. It reads the module rather than `pyproject.toml` because `version` there
+  is `dynamic` — the `[project]` table carries no literal to read, and a `tomllib` lookup for one
+  would raise `KeyError` and fail every release for the wrong reason.
 - **`CHANGELOG.md` must carry a `## [X.Y.Z]` section for the tag**, which has no analog in the
   apps. That `grep` and the changelog's heading format are one contract: reformat the headings
   and the check silently matches nothing.
 - **The built wheel is installed into a fresh venv and imported before publishing**, both halves
-  of it. `[tool.setuptools]` lists the packaged subpackages explicitly, so a subpackage added to
-  the tree but not to that list would otherwise ship a half-empty wheel. The step `cd`s out of the
-  repo first — from the root, the working directory's own `fishbowl_common/` shadows the installed
-  one and the import proves nothing.
+  of it, and then asserted on. `[tool.setuptools]` lists the packaged subpackages explicitly, so a
+  subpackage added to the tree but not to that list would otherwise ship a half-empty wheel; the
+  same is true of `py.typed`, which reaches the wheel only through
+  `[tool.setuptools.package-data]` and whose absence is silent — a consuming app's type checker
+  just goes back to seeing an untyped package. The step therefore checks the installed package
+  reports the tagged version and contains its `py.typed` marker. It `cd`s out of the repo first —
+  from the root, the working directory's own `fishbowl_common/` shadows the installed one and the
+  import proves nothing.
 - **`build` is installed in the workflow, not added to the `dev` extra**, the same call the apps
   make by keeping PyInstaller out of `requirements/`: it is release tooling, not something a
   developer needs to run the tests.
@@ -58,6 +65,19 @@ redundant and are not. `if: always()` runs the upload even when the pytest step 
 which is exactly when the PR coverage comment is worth reading. `fail_ci_if_error: false` keeps a
 Codecov outage from failing the job for an unrelated reason and masking the gate's own verdict.
 
-One further gap is tracked rather than fixed: the packaging metadata has no `py.typed`, `LICENSE`
-or `__version__` — the annotations are written throughout and then discarded at the package
-boundary (#9).
+## Packaging metadata
+
+Closed in #9, and each piece is load-bearing in a way that is easy to undo by accident:
+
+- **`py.typed`** ships only because `[tool.setuptools.package-data]` names it. It is the PEP 561
+  marker: without it a type checker in either app treats every shared name as `Any`, so the
+  annotations exist and no tool is permitted to read them. The release gate asserts it.
+- **`license = "MIT"` with `license-files`** is the PEP 639 form, which is why `[build-system]`
+  requires `setuptools>=77`. Do not add a `License :: OSI Approved` classifier alongside it —
+  setuptools rejects the pair.
+- **`__version__` is a literal in source**, not an `importlib.metadata` lookup. Both apps ship as
+  PyInstaller onefile builds with no `--copy-metadata`, and PyInstaller bundles modules rather
+  than `.dist-info` directories, so a metadata lookup would raise `PackageNotFoundError` at import
+  time inside the shipped executable. Nothing would catch it: every job in all three repos runs
+  from a source tree against a pip-installed package, and the apps' release workflows build the
+  executable without ever running it.

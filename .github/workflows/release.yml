@@ -44,14 +44,15 @@ jobs:
 
     # Fail the release if the pushed tag does not match the packaged version, so a tag
     # can never point at a distribution that reports a different version than the pin
-    # naming it. tomllib is in the standard library on 3.11, so this needs no dependency.
+    # naming it. The version is read from fishbowl_common/_version.py rather than from
+    # pyproject.toml, which declares it dynamic and carries no literal of its own.
     - name: Verify tag matches source version
       run: |
         TAG="${GITHUB_REF_NAME#v}"
-        VERSION="$(python -c 'import tomllib, pathlib; print(tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"])')"
-        echo "Tag version: $TAG / pyproject.toml version: $VERSION"
+        VERSION="$(python -c 'from fishbowl_common._version import __version__; print(__version__)')"
+        echo "Tag version: $TAG / _version.py version: $VERSION"
         if [[ "$TAG" != "$VERSION" ]]; then
-            echo "::error::Tag ($TAG) does not match pyproject.toml version ($VERSION)."
+            echo "::error::Tag ($TAG) does not match fishbowl_common/_version.py version ($VERSION)."
             exit 1
         fi
 
@@ -83,16 +84,42 @@ jobs:
     # Prove the wheel is installable and complete before publishing it. [tool.setuptools]
     # lists the packaged subpackages explicitly, so a subpackage added to the source tree
     # but not to that list would otherwise ship a wheel that imports only half the package.
+    # The same applies to py.typed, which reaches the wheel only via
+    # [tool.setuptools.package-data]: without it the annotations are silently unpublished
+    # and a consuming app's type checker sees the package as untyped.
     #
     # The cd is load-bearing: run from the repo root and the working directory's own
     # fishbowl_common/ shadows the installed one, so the import would pass without ever
     # touching what was built.
     - name: Verify the built wheel installs and imports
+      env:
+        TAG: ${{ github.ref_name }}
       run: |
         python -m venv "$RUNNER_TEMP/wheel-check"
         "$RUNNER_TEMP/wheel-check/bin/pip" install --quiet dist/*.whl
         cd "$RUNNER_TEMP"
-        "$RUNNER_TEMP/wheel-check/bin/python" -c "import fishbowl_common, fishbowl_common.gui; print(fishbowl_common.__file__)"
+        "$RUNNER_TEMP/wheel-check/bin/python" - <<'CHECK'
+        import os
+        import pathlib
+
+        import fishbowl_common
+        import fishbowl_common.gui
+
+        package_dir = pathlib.Path(fishbowl_common.__file__).parent
+        print(f"Imported {package_dir}, version {fishbowl_common.__version__}")
+
+        # The version the installed distribution reports must be the tag being published,
+        # proving the dynamic version resolved rather than that the source literal is readable.
+        # TAG is read from the environment because the heredoc is quoted, so the shell
+        # expands nothing inside it.
+        expected = os.environ["TAG"].removeprefix("v")
+        assert fishbowl_common.__version__ == expected, (
+            f"Wheel reports {fishbowl_common.__version__}, expected {expected}"
+        )
+
+        # The PEP 561 marker must be inside the installed package, not merely in the repo
+        assert (package_dir / "py.typed").is_file(), "py.typed is missing from the built wheel"
+        CHECK
 
     # Create the GitHub Release with the built distributions and auto-generated notes.
     # Attaching them also lets a consumer pin a release asset rather than a git ref.
