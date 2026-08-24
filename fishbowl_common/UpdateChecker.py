@@ -15,6 +15,32 @@ REQUEST_TIMEOUT_SECONDS = 5
 # default rather than a required argument.
 DEFAULT_CHECKSUMS_NAME = "SHA256SUMS.txt"
 
+# Sent with every request to the GitHub API. GitHub documents the User-Agent as
+# required and can reject a request carrying none; the other two pin the response to
+# the schema this module parses, so a future default API version cannot silently
+# reshape it. The User-Agent names the package rather than a consuming application,
+# since both of them share this client.
+REQUEST_HEADERS = {
+    "User-Agent": "fishbowl-common",
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+}
+
+# What UpdateChecker.last_error carries after a failed check. The check still fails
+# silently by returning None, and reading this is optional - but without it a rate
+# limit (the unauthenticated API allows 60 requests/hour/IP, and a whole office
+# shares one) is indistinguishable from an unplugged network cable, and the caller
+# tells the user to go looking for a problem they do not have.
+CHECK_ERROR_RATE_LIMITED = "rate_limited"
+CHECK_ERROR_HTTP = "http"
+CHECK_ERROR_NETWORK = "network"
+CHECK_ERROR_RESPONSE = "response"
+
+# The two statuses a rate-limited request comes back as: 403 for the exhausted
+# hourly budget, 429 for a secondary limit.
+FORBIDDEN_STATUS = 403
+TOO_MANY_REQUESTS_STATUS = 429
+
 
 # ReleaseAsset is a plain data holder describing one file published alongside a
 # GitHub release, carrying what a downloader needs to fetch and size-check it.
@@ -126,6 +152,10 @@ class UpdateChecker:
             f"https://api.github.com/repos/{repo}/releases/latest"
         )
 
+        # Why the most recent check failed, as one of the CHECK_ERROR_* values, or
+        # None while no check has failed. Set on every call to check_for_update().
+        self.last_error: str | None = None
+
     ###########################################################################
     ###                UpdateChecker -> check_for_update()                  ###
     ###########################################################################
@@ -137,15 +167,23 @@ class UpdateChecker:
         The check fails silently: any network, HTTP, or parsing problem returns
         None rather than raising, so a background check (e.g. on startup) never
         interrupts the user just because they are offline or GitHub is unreachable.
+        Why it failed is recorded in last_error for a caller that wants to word its
+        message accordingly.
 
         Returns:
             UpdateCheckResult | None: The comparison outcome and release details, or
                 None if the latest release could not be retrieved or parsed.
         """
 
+        self.last_error = None
+
         try:
+            request = urllib.request.Request(
+                self.latest_release_url, headers=REQUEST_HEADERS
+            )
+
             with urllib.request.urlopen(
-                self.latest_release_url, timeout=REQUEST_TIMEOUT_SECONDS
+                request, timeout=REQUEST_TIMEOUT_SECONDS
             ) as response:
                 release = json.loads(response.read())
 
@@ -167,11 +205,72 @@ class UpdateChecker:
                 self._find_asset(assets, self.asset_pattern),
                 self._find_asset(assets, self.checksums_name),
             )
-        except (urllib.error.URLError, OSError, ValueError, KeyError):
-            # URLError/OSError: network or HTTP failure. ValueError: malformed
-            # JSON. KeyError: an unexpected response shape missing the fields we
-            # rely on.
-            return None
+        except urllib.error.HTTPError as error:
+            # GitHub answered, but with a status instead of a release. Caught ahead
+            # of URLError (its base class) so a rate-limited check is not filed as a
+            # network failure, which is the one thing it is not.
+            return self._fail(
+                CHECK_ERROR_RATE_LIMITED
+                if self._is_rate_limited(error)
+                else CHECK_ERROR_HTTP
+            )
+        except (urllib.error.URLError, OSError):
+            # GitHub was never reached: no route, DNS failure, refused connection or
+            # a request that outran REQUEST_TIMEOUT_SECONDS.
+            return self._fail(CHECK_ERROR_NETWORK)
+        except (ValueError, KeyError):
+            # ValueError: malformed JSON. KeyError: an unexpected response shape
+            # missing the fields we rely on.
+            return self._fail(CHECK_ERROR_RESPONSE)
+
+    ###########################################################################
+    ###                  UpdateChecker -> _is_rate_limited()                ###
+    ###########################################################################
+    @staticmethod
+    def _is_rate_limited(error: urllib.error.HTTPError) -> bool:
+        """
+        Reports whether an HTTP failure is GitHub refusing the request for rate
+        limiting rather than for some other reason.
+
+        A 403 alone does not prove it: GitHub answers an exhausted budget and an
+        ordinary refusal with the same status. The rate-limited one is the one that
+        also reports no requests remaining, or says when to come back. A 429 is only
+        ever a rate limit and carries neither header reliably.
+
+        Args:
+            error (urllib.error.HTTPError): The failure GitHub answered with.
+
+        Returns:
+            bool: True if the request was rejected for rate limiting.
+        """
+
+        if error.code == TOO_MANY_REQUESTS_STATUS:
+            return True
+
+        if error.code != FORBIDDEN_STATUS:
+            return False
+
+        # An HTTPError built without a response carries no headers at all.
+        headers = getattr(error, "headers", None) or {}
+
+        return headers.get("X-RateLimit-Remaining") == "0" or "Retry-After" in headers
+
+    ###########################################################################
+    ###                       UpdateChecker -> _fail()                      ###
+    ###########################################################################
+    def _fail(self, reason: str) -> None:
+        """
+        Records why the check failed and yields the silent failure the caller sees.
+
+        Args:
+            reason (str): One of the CHECK_ERROR_* values.
+
+        Returns:
+            None: Always, so an except block can `return self._fail(...)`.
+        """
+
+        self.last_error = reason
+        return None
 
     ###########################################################################
     ###                    UpdateChecker -> _find_asset()                   ###

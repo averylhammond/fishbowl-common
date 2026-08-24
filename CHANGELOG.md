@@ -28,8 +28,24 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
   key updates its row instead of adding a second one.
   ([#11](https://github.com/averylhammond/fishbowl-common/issues/11))
 
+### Added
+
+- `UpdateChecker` now records why a check failed in `last_error`, as one of the
+  `CHECK_ERROR_RATE_LIMITED` / `CHECK_ERROR_HTTP` / `CHECK_ERROR_NETWORK` /
+  `CHECK_ERROR_RESPONSE` values exported from the package root. The check still fails
+  silently by returning `None`, so nothing an app already does changes; a caller that wants to
+  tell a throttled check apart from an offline machine can now read it. `UpdateCoordinator`
+  does, and a manual check that was rate limited no longer sends the user after their internet
+  connection. ([#6](https://github.com/averylhammond/fishbowl-common/issues/6))
+
 ### Fixed
 
+- `UpdateChecker` now sends a `User-Agent`, `Accept: application/vnd.github+json` and
+  `X-GitHub-Api-Version` with its request, which GitHub's API documents as required and can
+  refuse a request without. It also catches `urllib.error.HTTPError` ahead of `URLError`, so a
+  403 from the unauthenticated rate limit (60 requests/hour/IP — one shared budget for a whole
+  office, and both apps check on every launch) is no longer indistinguishable from being
+  offline. ([#6](https://github.com/averylhammond/fishbowl-common/issues/6))
 - `SettingsRepository.initialize_database()` now reports an `OSError` from creating the
   data directory through `report_error` instead of letting it escape the `sqlite3.Error`
   handler. A read-only or permission-denied data directory crashed the consuming app at

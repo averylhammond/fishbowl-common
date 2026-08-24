@@ -14,6 +14,21 @@ constructs; the rest are its collaborators.
 - `DEFAULT_CHECKSUMS_NAME = "SHA256SUMS.txt"` is the asset name an app's release pipeline must
   publish for an in-place install to be offered. Renaming it here silently downgrades both apps
   to the manual download rather than failing anything.
+- **Every request carries `REQUEST_HEADERS`** — `User-Agent`, `Accept` and
+  `X-GitHub-Api-Version` — which is why `check_for_update()` builds a `urllib.request.Request`
+  rather than handing `urlopen()` a bare URL. GitHub documents the User-Agent as required and
+  can refuse a request without one; the other two pin the response to the schema this module
+  parses. Do not drop back to a bare URL for brevity.
+- **`urllib.error.HTTPError` is caught ahead of `URLError`, and the order is the fix** (#6).
+  It subclasses `URLError`, so the broad handler used to swallow a 403 from the unauthenticated
+  rate limit — 60 requests/hour/IP, one budget shared by an office, and both apps check on every
+  launch — and return the same bare `None` as an unplugged cable. `_is_rate_limited()` will not
+  read a 403 alone as a rate limit, because GitHub answers an ordinary refusal with the same
+  status; it wants an exhausted `X-RateLimit-Remaining`, a `Retry-After`, or a 429.
+- **`last_error` carries one of the `CHECK_ERROR_*` values after a failed check**, and is
+  cleared at the top of every call. It is the *only* thing separating those failures for a
+  caller, and `UpdateCoordinator` reads it to word a manual check's popup — see the
+  no-`report_error` rule below, which it does not break.
 - **The version comparison is not its own.** `check_for_update()` calls `compare_versions()`
   from `version_utils`; the private `_parse_version()` it used to carry was extracted there when
   `PatchNotes` came to need the identical comparison (#22), and fixed while it moved (#5). Do
@@ -56,6 +71,11 @@ The whole update feature as one object, and the only one of these an app constru
 - **Every network call runs on a `daemon=True` thread and comes back through
   `display.after(0, ...)`.** Tk is not thread-safe; touching a widget from the worker is the bug
   this shape exists to prevent. A new background step follows the same pattern.
+- **The failure message is chosen from `CHECK_FAILED_MESSAGES`, keyed by the checker's
+  `last_error`** (#6). A rate-limited check earns its own wording because nothing is wrong with
+  the machine and the same check succeeds later untouched; "check your internet connection" sends
+  the user after a problem they do not have. `_run_check` reads `last_error` on the worker thread
+  and hands it to `_handle_result`, so the GUI thread never reaches back into the checker.
 - **`_handle_result` pops "no updates"/"check failed" only when `manual=True`.** It opens the
   update window whenever a newer release exists, but a startup check must never interrupt a launch
   just because the machine is offline. This is a design decision, not an oversight — see the
@@ -75,3 +95,9 @@ pin-moving change.
 `UpdateCoordinator` decides whether the user hears about it at all (only on a manual check). Do
 not "improve" them by adding a reporter: a silent startup check on an offline machine is the
 designed behavior, not an oversight.
+
+`UpdateChecker.last_error` is deliberately *not* that reporter, and #6 is where the line was
+drawn. It tells no one anything: it records why the last call failed and waits to be asked, so
+the startup check stays as silent as it ever was while the coordinator can still say something
+truthful on a manual one. A new "why did it fail" signal in these classes takes that shape —
+recorded state a caller reads — rather than a callback that speaks.

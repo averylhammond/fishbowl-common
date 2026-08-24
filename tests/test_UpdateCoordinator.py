@@ -3,6 +3,11 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
 
+from fishbowl_common.UpdateChecker import (
+    CHECK_ERROR_HTTP,
+    CHECK_ERROR_NETWORK,
+    CHECK_ERROR_RATE_LIMITED,
+)
 from fishbowl_common.UpdateCoordinator import UpdateCoordinator, UpdateDisplay
 
 # Values injected into the coordinator under test. The version is only ever compared
@@ -158,9 +163,14 @@ def test_run_check_schedules_the_result_on_the_gui_thread(coordinator):
     )
     mock_checker_cls.return_value.check_for_update.assert_called_once_with()
 
-    # Nothing is presented from the worker thread; the result is marshalled instead
+    # Nothing is presented from the worker thread; the result is marshalled instead,
+    # together with why the check failed, read on the thread that owns the checker
     coordinator.display.after.assert_called_once_with(
-        0, coordinator.coordinator._handle_result, mock_result, True
+        0,
+        coordinator.coordinator._handle_result,
+        mock_result,
+        True,
+        mock_checker_cls.return_value.last_error,
     )
     coordinator.display.show_update_available.assert_not_called()
 
@@ -326,7 +336,29 @@ def test_handle_result_reports_up_to_date_on_a_manual_check(coordinator):
 def test_handle_result_reports_failure_on_a_manual_check(coordinator):
     """
     Verifies that a manual check whose fetch failed (a None result) reports that
-    failure through a popup rather than silently doing nothing.
+    failure through a popup rather than silently doing nothing, and that an
+    unreachable network - or a caller naming no reason at all - is reported as the
+    connection problem it most likely is.
+
+    Args:
+        coordinator (pytest.fixture): Provides the coordinator and its mock display
+    """
+
+    coordinator.coordinator._handle_result(None, manual=True, error=CHECK_ERROR_NETWORK)
+
+    coordinator.display.show_popup.assert_called_once()
+    assert coordinator.display.show_popup.call_args.args[0] == "Update Check Failed"
+    assert "internet connection" in coordinator.display.show_popup.call_args.args[1]
+    coordinator.display.show_update_available.assert_not_called()
+
+
+def test_handle_result_reports_an_unexplained_failure_as_a_connection_problem(
+    coordinator,
+):
+    """
+    Verifies that a failure reported with no reason still gets the connection
+    message, so a caller that never looked at the checker's last_error sees exactly
+    what it saw before the reasons existed.
 
     Args:
         coordinator (pytest.fixture): Provides the coordinator and its mock display
@@ -335,8 +367,47 @@ def test_handle_result_reports_failure_on_a_manual_check(coordinator):
     coordinator.coordinator._handle_result(None, manual=True)
 
     coordinator.display.show_popup.assert_called_once()
-    assert coordinator.display.show_popup.call_args.args[0] == "Update Check Failed"
-    coordinator.display.show_update_available.assert_not_called()
+    assert "internet connection" in coordinator.display.show_popup.call_args.args[1]
+
+
+def test_handle_result_blames_a_rate_limit_rather_than_the_connection(coordinator):
+    """
+    Verifies that a rate-limited check is reported as GitHub throttling this
+    network. Nothing is wrong with the machine and the same check succeeds later
+    untouched, so the connection message would send the user after a problem they
+    do not have.
+
+    Args:
+        coordinator (pytest.fixture): Provides the coordinator and its mock display
+    """
+
+    coordinator.coordinator._handle_result(
+        None, manual=True, error=CHECK_ERROR_RATE_LIMITED
+    )
+
+    coordinator.display.show_popup.assert_called_once()
+    message = coordinator.display.show_popup.call_args.args[1]
+    assert "limiting" in message
+    assert "internet connection" not in message
+
+
+def test_handle_result_reports_a_refused_request_without_blaming_the_connection(
+    coordinator,
+):
+    """
+    Verifies that GitHub answering with an error status is reported as GitHub being
+    unable to answer, so the mapping covers more than the one rate-limit case.
+
+    Args:
+        coordinator (pytest.fixture): Provides the coordinator and its mock display
+    """
+
+    coordinator.coordinator._handle_result(None, manual=True, error=CHECK_ERROR_HTTP)
+
+    coordinator.display.show_popup.assert_called_once()
+    message = coordinator.display.show_popup.call_args.args[1]
+    assert "GitHub" in message
+    assert "internet connection" not in message
 
 
 ###############################################################################

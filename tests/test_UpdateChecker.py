@@ -4,6 +4,10 @@ from unittest.mock import patch, MagicMock
 
 from fishbowl_common.UpdateChecker import (
     UpdateChecker,
+    CHECK_ERROR_HTTP,
+    CHECK_ERROR_NETWORK,
+    CHECK_ERROR_RATE_LIMITED,
+    CHECK_ERROR_RESPONSE,
     DEFAULT_CHECKSUMS_NAME,
     REQUEST_TIMEOUT_SECONDS,
 )
@@ -11,6 +15,10 @@ from fishbowl_common.UpdateChecker import (
 # Repository used to construct the checker under test. Any "owner/name" value works;
 # the checker derives its GitHub API URL from it.
 _TEST_REPO = "owner/repo"
+
+# The endpoint the checker derives from _TEST_REPO, named once so a test asserting
+# the request does not rebuild it.
+_LATEST_RELEASE_URL = f"https://api.github.com/repos/{_TEST_REPO}/releases/latest"
 
 
 ###############################################################################
@@ -50,6 +58,23 @@ def _release_response(
     mock_context = MagicMock()
     mock_context.__enter__.return_value = mock_response
     return mock_context
+
+
+def _http_error(code: int, headers: dict | None = None):
+    """
+    Builds the HTTPError urlopen raises when GitHub answers with a status instead of
+    a release.
+
+    Args:
+        code (int): The HTTP status GitHub answered with.
+        headers (dict | None): The response headers, e.g. the rate-limit headers a
+            refusal carries; None stands for a response carrying none at all.
+
+    Returns:
+        urllib.error.HTTPError: The error to raise from the mocked urlopen.
+    """
+
+    return urllib.error.HTTPError(_LATEST_RELEASE_URL, code, "refused", headers, None)
 
 
 def _asset(name: str, size: int = 1024):
@@ -234,10 +259,35 @@ def test_check_for_update_requests_latest_release_url_with_timeout(mock_urlopen)
 
     UpdateChecker(current_version="3.1.2", repo=_TEST_REPO).check_for_update()
 
-    mock_urlopen.assert_called_once_with(
-        f"https://api.github.com/repos/{_TEST_REPO}/releases/latest",
-        timeout=REQUEST_TIMEOUT_SECONDS,
-    )
+    mock_urlopen.assert_called_once()
+    assert mock_urlopen.call_args.args[0].full_url == _LATEST_RELEASE_URL
+    assert mock_urlopen.call_args.kwargs == {"timeout": REQUEST_TIMEOUT_SECONDS}
+
+
+@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+def test_check_for_update_identifies_itself_to_the_github_api(mock_urlopen):
+    """
+    Verifies that the request carries the headers GitHub's API expects: a User-Agent
+    (documented as required, and rejectable when absent) and the Accept and version
+    headers pinning the response to the schema this parses.
+
+    Args:
+        mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
+    """
+
+    mock_urlopen.return_value = _release_response("v3.1.2")
+
+    UpdateChecker(current_version="3.1.2", repo=_TEST_REPO).check_for_update()
+
+    # Request title-cases the header names it is handed, so compare on lowered keys
+    sent = {
+        name.lower(): value
+        for name, value in mock_urlopen.call_args.args[0].header_items()
+    }
+
+    assert sent["user-agent"] == "fishbowl-common"
+    assert sent["accept"] == "application/vnd.github+json"
+    assert sent["x-github-api-version"] == "2022-11-28"
 
 
 @patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
@@ -252,11 +302,10 @@ def test_check_for_update_returns_none_on_network_error(mock_urlopen):
 
     mock_urlopen.side_effect = urllib.error.URLError("no network")
 
-    result = UpdateChecker(
-        current_version="3.1.2", repo=_TEST_REPO
-    ).check_for_update()
+    checker = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO)
 
-    assert result is None
+    assert checker.check_for_update() is None
+    assert checker.last_error == CHECK_ERROR_NETWORK
 
 
 @patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
@@ -275,11 +324,131 @@ def test_check_for_update_returns_none_on_malformed_response(mock_urlopen):
     mock_context.__enter__.return_value = mock_response
     mock_urlopen.return_value = mock_context
 
-    result = UpdateChecker(
-        current_version="3.1.2", repo=_TEST_REPO
-    ).check_for_update()
+    checker = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO)
 
-    assert result is None
+    assert checker.check_for_update() is None
+    assert checker.last_error == CHECK_ERROR_RESPONSE
+
+
+###############################################################################
+###               Tests UpdateChecker -> last_error reporting               ###
+###############################################################################
+@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+def test_check_for_update_reports_an_exhausted_rate_limit(mock_urlopen):
+    """
+    Verifies that GitHub refusing the check because the hourly budget is spent is
+    reported as a rate limit rather than as a network failure. The unauthenticated
+    API allows 60 requests/hour/IP and a whole office shares one, so this is the
+    failure a caller most needs to word differently.
+
+    Args:
+        mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
+    """
+
+    mock_urlopen.side_effect = _http_error(403, {"X-RateLimit-Remaining": "0"})
+
+    checker = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO)
+
+    assert checker.check_for_update() is None
+    assert checker.last_error == CHECK_ERROR_RATE_LIMITED
+
+
+@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+def test_check_for_update_reports_a_rate_limit_carrying_only_retry_after(mock_urlopen):
+    """
+    Verifies that a refusal telling the caller when to come back is read as a rate
+    limit even though it reports requests still remaining, which is how GitHub
+    answers a secondary limit with a 403.
+
+    Args:
+        mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
+    """
+
+    mock_urlopen.side_effect = _http_error(
+        403, {"X-RateLimit-Remaining": "42", "Retry-After": "60"}
+    )
+
+    checker = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO)
+
+    assert checker.check_for_update() is None
+    assert checker.last_error == CHECK_ERROR_RATE_LIMITED
+
+
+@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+def test_check_for_update_reports_too_many_requests_as_a_rate_limit(mock_urlopen):
+    """
+    Verifies that a 429 is read as a rate limit on the status alone, since it is
+    never anything else and need not carry the rate-limit headers.
+
+    Args:
+        mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
+    """
+
+    mock_urlopen.side_effect = _http_error(429)
+
+    checker = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO)
+
+    assert checker.check_for_update() is None
+    assert checker.last_error == CHECK_ERROR_RATE_LIMITED
+
+
+@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+def test_check_for_update_reports_an_ordinary_refusal_as_an_http_failure(mock_urlopen):
+    """
+    Verifies that a 403 with requests still remaining and no retry advice is not
+    mistaken for a rate limit - GitHub answers an ordinary refusal with the same
+    status, and telling the user to wait it out would be wrong.
+
+    Args:
+        mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
+    """
+
+    mock_urlopen.side_effect = _http_error(403, {"X-RateLimit-Remaining": "57"})
+
+    checker = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO)
+
+    assert checker.check_for_update() is None
+    assert checker.last_error == CHECK_ERROR_HTTP
+
+
+@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+def test_check_for_update_reports_a_missing_release_as_an_http_failure(mock_urlopen):
+    """
+    Verifies that a repository publishing no releases (a 404) is reported as an HTTP
+    failure, so it is neither blamed on a rate limit nor on the network.
+
+    Args:
+        mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
+    """
+
+    mock_urlopen.side_effect = _http_error(404)
+
+    checker = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO)
+
+    assert checker.check_for_update() is None
+    assert checker.last_error == CHECK_ERROR_HTTP
+
+
+@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+def test_check_for_update_clears_the_error_once_a_check_succeeds(mock_urlopen):
+    """
+    Verifies that a successful check leaves no error behind, so a caller reusing a
+    checker cannot report a failure that has since resolved itself.
+
+    Args:
+        mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
+    """
+
+    checker = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO)
+
+    mock_urlopen.side_effect = _http_error(429)
+    checker.check_for_update()
+
+    mock_urlopen.side_effect = None
+    mock_urlopen.return_value = _release_response("v3.2.0")
+
+    assert checker.check_for_update() is not None
+    assert checker.last_error is None
 
 
 ###############################################################################
