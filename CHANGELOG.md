@@ -20,6 +20,12 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
   handler. A read-only or permission-denied data directory crashed the consuming app at
   startup, before its display existed.
   ([#4](https://github.com/averylhammond/fishbowl-common/issues/4))
+- `SettingsRepository` now closes its SQLite connection after every call. `sqlite3`'s
+  connection context manager only commits or rolls back, so `initialize_database()`,
+  `get_all_settings()` and `save_setting()` each left a connection open until the garbage
+  collector finalized it — and on Windows kept the database file locked longer than
+  expected. Both apps write a setting on every preference change and every checkbox
+  toggle. ([#3](https://github.com/averylhammond/fishbowl-common/issues/3))
 
 ## [1.3.0] - 2026-08-21
 

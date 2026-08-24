@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 from typing import Callable
 
@@ -53,7 +54,9 @@ class SettingsRepository:
             # Ensure the data directory exists before SQLite creates the file
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
-            with sqlite3.connect(self.db_path) as connection:
+            # closing() closes the connection on the way out; the connection's own
+            # context manager only commits or rolls back, so both are needed
+            with closing(sqlite3.connect(self.db_path)) as connection, connection:
                 connection.execute(
                     "CREATE TABLE IF NOT EXISTS settings ("
                     "key TEXT PRIMARY KEY, "
@@ -80,7 +83,9 @@ class SettingsRepository:
         """
 
         try:
-            with sqlite3.connect(self.db_path) as connection:
+            # closing() closes the connection on the way out; the connection's own
+            # context manager only commits or rolls back, so both are needed
+            with closing(sqlite3.connect(self.db_path)) as connection, connection:
                 rows = connection.execute("SELECT key, value FROM settings").fetchall()
                 return {key: value for key, value in rows}
         except sqlite3.Error as error:
@@ -104,7 +109,9 @@ class SettingsRepository:
         """
 
         try:
-            with sqlite3.connect(self.db_path) as connection:
+            # closing() closes the connection on the way out; the connection's own
+            # context manager only commits or rolls back, so both are needed
+            with closing(sqlite3.connect(self.db_path)) as connection, connection:
                 connection.execute(
                     "INSERT INTO settings (key, value) VALUES (?, ?) "
                     "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
