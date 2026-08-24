@@ -30,6 +30,21 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
 
 ### Added
 
+- The package now ships a `py.typed` marker, so the annotations both halves already carried
+  are published rather than discarded at the package boundary. Until now a type checker
+  running in a consuming app treated every shared name as `Any`, which made checking a
+  `fishbowl_common` call impossible: the annotations existed and no tool was allowed to read
+  them. ([#9](https://github.com/averylhammond/fishbowl-common/issues/9))
+- `fishbowl_common.__version__` reports the installed version, so an app can name which shared
+  build it is running alongside its own. It is a literal in the new
+  `fishbowl_common/_version.py`, which `pyproject.toml` reads via `[tool.setuptools.dynamic]`
+  — the version still lives in exactly one place, but that place is now source rather than
+  packaging metadata, so it survives into the PyInstaller onefile builds both apps ship.
+  ([#9](https://github.com/averylhammond/fishbowl-common/issues/9))
+- The package is now licensed (MIT, with a `LICENSE` file) and its metadata is complete: a
+  readme, an author, project URLs and classifiers. `pip show fishbowl-common` reports a
+  license and a homepage rather than nothing.
+  ([#9](https://github.com/averylhammond/fishbowl-common/issues/9))
 - `UpdateChecker` now records why a check failed in `last_error`, as one of the
   `CHECK_ERROR_RATE_LIMITED` / `CHECK_ERROR_HTTP` / `CHECK_ERROR_NETWORK` /
   `CHECK_ERROR_RESPONSE` values exported from the package root. The check still fails

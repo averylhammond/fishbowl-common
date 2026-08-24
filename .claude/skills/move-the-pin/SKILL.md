@@ -17,9 +17,9 @@ until two other repos are edited.
 
 ## A public-signature change is three PRs, in order
 
-1. **Here** — make the change, then cut a release: bump `version` in `pyproject.toml`, add the
-   matching `## [X.Y.Z]` section to `CHANGELOG.md`, merge, push the `vX.Y.Z` tag. Use
-   `/cut-a-release` for the full procedure.
+1. **Here** — make the change, then cut a release: bump `__version__` in
+   `fishbowl_common/_version.py`, add the matching `## [X.Y.Z]` section to `CHANGELOG.md`,
+   merge, push the `vX.Y.Z` tag. Use `/cut-a-release` for the full procedure.
 2. **`FishbowlInvoiceTool`** — move the pin to the new tag, adapt the call sites, merge.
 3. **`FishbowlInventoryTool`** — the same.
 

@@ -10,7 +10,10 @@ Shared infrastructure and GUI classes for the Fishbowl desktop tools
 [FishbowlInventoryTool](https://github.com/averylhammond/FishbowlInventoryTool)). These
 classes are application-agnostic — anything app-specific (paths, versions, repo names,
 the application's own name) is injected by the consumer. The package has no runtime
-dependencies beyond the standard library.
+dependencies beyond the standard library. It ships a PEP 561 `py.typed` marker, so the
+annotations both halves carry are visible to a type checker running in a consuming app, and
+exports `fishbowl_common.__version__` so an app can report which shared build it is running
+alongside its own version.
 
 The package is split in two halves. `fishbowl_common` itself is headless: it imports
 nothing but the standard library, so an app can use it from an integration test running
@@ -203,27 +206,30 @@ third runs only when a version tag is pushed.
 | --- | --- |
 | [Unit Tests](.github/workflows/unit-tests.yml) | The full `pytest` suite on `ubuntu-latest`. |
 | [Code Coverage](.github/workflows/code-coverage.yml) | `pytest --cov=fishbowl_common --cov-report=xml --cov-report=term --cov-fail-under=90`, uploaded to Codecov. |
-| [Release](.github/workflows/release.yml) | On a pushed `v*` tag: the tag against `pyproject.toml`, the tag against [`CHANGELOG.md`](CHANGELOG.md), the test suite, and that the built wheel installs and imports. |
+| [Release](.github/workflows/release.yml) | On a pushed `v*` tag: the tag against [`fishbowl_common/_version.py`](fishbowl_common/_version.py), the tag against [`CHANGELOG.md`](CHANGELOG.md), the test suite, and that the built wheel installs, imports, reports the tagged version and carries its `py.typed` marker. |
 
 ## Releases
 
-The package version lives in `pyproject.toml` and is published by tag. Consumers pin a
-tag in their requirements (see [Setup](#setup)), so bumping the version here has no
-effect on an app until that app's pin is moved to the new tag.
+The package version lives in [`fishbowl_common/_version.py`](fishbowl_common/_version.py)
+and is published by tag. `pyproject.toml` declares it `dynamic` and reads that attribute, so
+the two cannot disagree, and the version is a plain module attribute — which is what keeps
+`fishbowl_common.__version__` correct inside the PyInstaller builds the consuming apps ship.
+Consumers pin a tag in their requirements (see [Setup](#setup)), so bumping the version here
+has no effect on an app until that app's pin is moved to the new tag.
 [`CHANGELOG.md`](CHANGELOG.md) records what each tag changed, which is what makes moving a
 pin a decision rather than an act of faith.
 
 Pushing a `vX.Y.Z` tag runs the release workflow, which publishes a GitHub Release with an
 sdist and a wheel attached — so an app can pin a release asset instead of a git ref if it
-prefers. It refuses to publish unless the tag matches `pyproject.toml`'s version and
+prefers. It refuses to publish unless the tag matches `_version.py`'s version and
 `CHANGELOG.md` documents that version, so a release can never ship a distribution whose
 number disagrees with the tag naming it, or one nothing records.
 
 Cutting a release:
 
 ```bash
-# Bump `version` in pyproject.toml and move CHANGELOG.md's [Unreleased] section under a
-# `## [X.Y.Z] - YYYY-MM-DD` heading, then merge that PR. Then, from an up-to-date main:
+# Bump `__version__` in fishbowl_common/_version.py and move CHANGELOG.md's [Unreleased]
+# section under a `## [X.Y.Z] - YYYY-MM-DD` heading, then merge that PR. Then, from main:
 git checkout main && git pull
 git tag vX.Y.Z && git push origin vX.Y.Z
 ```
@@ -238,3 +244,7 @@ remain valid pins — a git ref is all a pin resolves — and the changelog cove
 - [FishbowlInventoryTool](https://github.com/averylhammond/FishbowlInventoryTool) —
   parses Fishbowl inventory availability and turnover report PDFs into an Excel report.
   Uses the whole package.
+
+## License
+
+[MIT](LICENSE).

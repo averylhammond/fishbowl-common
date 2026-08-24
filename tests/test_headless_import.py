@@ -77,6 +77,10 @@ def test_top_level_package_imports_without_tkinter():
     # it belongs to this half of the package rather than the tkinter half
     assert module.UpdateCoordinator is not None
 
+    # _version is a plain literal on this side of the split, so an application can
+    # report which shared build it is running without a display present
+    assert module.__version__
+
 
 def test_gui_subpackage_requires_tkinter():
     """

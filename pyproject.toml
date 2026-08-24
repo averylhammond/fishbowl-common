@@ -1,14 +1,42 @@
 [build-system]
-requires = ["setuptools>=68"]
+# setuptools>=77 for PEP 639: the SPDX license expression and license-files below are
+# rejected by older versions.
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "fishbowl-common"
-version = "1.3.0"
+# The version is not written here. It lives in fishbowl_common/_version.py, which this
+# reads via [tool.setuptools.dynamic] below, so the packaged version and the attribute an
+# application reports can never disagree. See that module for why it is the source.
+dynamic = ["version"]
 description = "Shared infrastructure and GUI classes for the Fishbowl desktop tools (update check and install, CLI args, settings persistence, themed tkinter windows)."
+readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Avery Hammond", email = "149446626+averylhammond@users.noreply.github.com" },
+]
+# No "License :: OSI Approved" classifier: PEP 639 deprecates license classifiers, and
+# setuptools rejects one used alongside the SPDX expression above.
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
+]
 # No runtime dependencies: every class relies only on the Python standard library.
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/averylhammond/fishbowl-common"
+Repository = "https://github.com/averylhammond/fishbowl-common"
+Changelog = "https://github.com/averylhammond/fishbowl-common/blob/main/CHANGELOG.md"
+Issues = "https://github.com/averylhammond/fishbowl-common/issues"
 
 [project.optional-dependencies]
 # The GUI subpackage needs only tkinter, which ships with CPython, so this extra
@@ -23,6 +51,15 @@ dev = [
 
 [tool.setuptools]
 packages = ["fishbowl_common", "fishbowl_common.gui"]
+
+[tool.setuptools.dynamic]
+version = { attr = "fishbowl_common._version.__version__" }
+
+[tool.setuptools.package-data]
+# The PEP 561 marker, which is what publishes the annotations both halves already carry
+# to a type checker running in a consuming application. One marker at the top-level
+# package root covers fishbowl_common.gui too.
+fishbowl_common = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
