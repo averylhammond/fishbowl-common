@@ -133,6 +133,12 @@ class UpdateCoordinator:
         self.display = display
         self.asset_pattern = asset_pattern
 
+        # Why the last install flow's download failed, as one of UpdateDownloader's
+        # DOWNLOAD_ERROR_* values, for an app that wants to say more than "it
+        # failed". None when the download succeeded - including when the installer
+        # itself then refused to start.
+        self.last_download_error: str | None = None
+
     ###########################################################################
     ###                     UpdateCoordinator -> start()                    ###
     ###########################################################################
@@ -323,6 +329,10 @@ class UpdateCoordinator:
                     0, on_progress, received, total
                 ),
             )
+
+        # Read on this thread and stored before the outcome crosses over, so the
+        # GUI thread never reaches back into a downloader this thread owns.
+        self.last_download_error = downloader.last_error
 
         started = installer is not None and UpdateInstaller().launch(
             installer, installer.with_name(f"{installer.stem}_install.log")

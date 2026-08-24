@@ -40,6 +40,17 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
 
 ### Fixed
 
+- `UpdateDownloader` now sends the same `User-Agent` on both of its requests — the checksums
+  fetch and the installer download — instead of going out as `Python-urllib`, which the
+  filtering proxies these apps are deployed behind routinely refuse. Those two requests move
+  the bytes that land on a customer's disk, so the check identifying itself while they did not
+  was the more dangerous half of the gap. Both also catch `urllib.error.HTTPError` ahead of
+  `URLError` now, and record why they failed in `last_error` — one of `DOWNLOAD_ERROR_HTTP`,
+  `DOWNLOAD_ERROR_NETWORK`, `DOWNLOAD_ERROR_IO`, `DOWNLOAD_ERROR_NO_DIGEST`,
+  `DOWNLOAD_ERROR_SIZE` or `DOWNLOAD_ERROR_DIGEST`. `UpdateCoordinator` copies that reason to
+  `last_download_error` before the outcome crosses to the GUI thread, since it builds the
+  downloader itself and never hands it out.
+  ([#6](https://github.com/averylhammond/fishbowl-common/issues/6))
 - `UpdateChecker` now sends a `User-Agent`, `Accept: application/vnd.github+json` and
   `X-GitHub-Api-Version` with its request, which GitHub's API documents as required and can
   refuse a request without. It also catches `urllib.error.HTTPError` ahead of `URLError`, so a

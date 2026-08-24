@@ -9,6 +9,7 @@ from fishbowl_common.UpdateChecker import (
     CHECK_ERROR_RATE_LIMITED,
 )
 from fishbowl_common.UpdateCoordinator import UpdateCoordinator, UpdateDisplay
+from fishbowl_common.UpdateDownloader import DOWNLOAD_ERROR_HTTP
 
 # Values injected into the coordinator under test. The version is only ever compared
 # by UpdateChecker (which is mocked here) and echoed back in the up-to-date message,
@@ -600,3 +601,59 @@ def test_run_install_reports_failure_when_the_installer_will_not_start(
     coordinator.coordinator._run_install(_result(), MagicMock(), on_finished)
 
     coordinator.display.after.assert_called_once_with(0, on_finished, False)
+
+
+@patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
+@patch("fishbowl_common.UpdateCoordinator.UpdateDownloader")
+def test_run_install_carries_the_download_failure_reason(
+    mock_downloader_cls, _mock_installer_cls, coordinator
+):
+    """
+    Verifies that why the download failed is copied off the downloader before the
+    outcome crosses to the GUI thread, so an application whose finished callback
+    fires with False can say what went wrong rather than only that something did.
+    The downloader itself is built in here and never handed out, so this attribute
+    is the only way that reason leaves the coordinator.
+
+    Args:
+        mock_downloader_cls (unittest.mock.MagicMock): Mocks UpdateDownloader
+        _mock_installer_cls (unittest.mock.MagicMock): Mocks UpdateInstaller
+        coordinator (pytest.fixture): Provides the coordinator and its mock display
+    """
+
+    downloader = mock_downloader_cls.return_value
+    downloader.fetch_expected_sha256.return_value = None
+    downloader.last_error = DOWNLOAD_ERROR_HTTP
+
+    coordinator.coordinator._run_install(_result(), MagicMock(), MagicMock())
+
+    assert coordinator.coordinator.last_download_error == DOWNLOAD_ERROR_HTTP
+
+
+@patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
+@patch("fishbowl_common.UpdateCoordinator.UpdateDownloader")
+def test_run_install_carries_no_reason_when_the_download_succeeded(
+    mock_downloader_cls, mock_installer_cls, coordinator
+):
+    """
+    Verifies that a download that worked clears any earlier reason, so an installer
+    that then refuses to start is never reported with a stale explanation for a
+    download that was fine.
+
+    Args:
+        mock_downloader_cls (unittest.mock.MagicMock): Mocks UpdateDownloader
+        mock_installer_cls (unittest.mock.MagicMock): Mocks UpdateInstaller
+        coordinator (pytest.fixture): Provides the coordinator and its mock display
+    """
+
+    coordinator.coordinator.last_download_error = DOWNLOAD_ERROR_HTTP
+
+    downloader = mock_downloader_cls.return_value
+    downloader.fetch_expected_sha256.return_value = "abc123"
+    downloader.download.return_value = Path("/tmp/fishbowl-update/App_Setup.exe")
+    downloader.last_error = None
+    mock_installer_cls.return_value.launch.return_value = False
+
+    coordinator.coordinator._run_install(_result(), MagicMock(), MagicMock())
+
+    assert coordinator.coordinator.last_download_error is None

@@ -68,7 +68,7 @@ does not pull in tkinter.
 | `version_utils` | `parse_version()` / `compare_versions()`, two module-level functions. **Neither ever raises.** |
 | `PatchNotes` | Reads a shipped changelog and returns every section in a version *range*, newest first. |
 | `UpdateChecker` | Queries the GitHub releases API; returns an `UpdateCheckResult` or `None`, and names the failure in `last_error`. |
-| `UpdateDownloader` | Streams an asset and verifies size + SHA-256 before the caller executes it. |
+| `UpdateDownloader` | Streams an asset and verifies size + SHA-256 before the caller executes it; names the failure in `last_error`. |
 | `UpdateInstaller` | Starts a downloaded Inno Setup installer silently and detached (Windows only). |
 | `UpdateCoordinator` | The whole update feature as one object, and the only update class an app constructs. |
 | `UpdateDisplay` | A `typing.Protocol` (in `UpdateCoordinator.py`) — what keeps the coordinator headless. |

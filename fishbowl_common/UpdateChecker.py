@@ -20,8 +20,13 @@ DEFAULT_CHECKSUMS_NAME = "SHA256SUMS.txt"
 # the schema this module parses, so a future default API version cannot silently
 # reshape it. The User-Agent names the package rather than a consuming application,
 # since both of them share this client.
+# How this package identifies itself over HTTP. Named separately because
+# UpdateDownloader sends it too, on requests that want none of the API headers
+# below, and the two must not drift apart.
+USER_AGENT = "fishbowl-common"
+
 REQUEST_HEADERS = {
-    "User-Agent": "fishbowl-common",
+    "User-Agent": USER_AGENT,
     "Accept": "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
 }

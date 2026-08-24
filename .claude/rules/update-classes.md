@@ -36,6 +36,18 @@ constructs; the rest are its collaborators.
 
 ## `UpdateDownloader`
 
+- **Both requests send `REQUEST_HEADERS`, and it is the `User-Agent` alone** — no `Accept`, no
+  API version, because these fetch a file from the asset host rather than the API (#6). The
+  default `Python-urllib` is what a filtering proxy on an office network refuses, and these are
+  the two requests that put bytes on a customer's disk.
+- **`last_error` carries one of the `DOWNLOAD_ERROR_*` values**, set by both `fetch_expected_sha256()`
+  and `download()` and cleared at the top of each. `DOWNLOAD_ERROR_IO` deliberately covers both a
+  disk failure and a socket error raised outside `URLError`: both arrive as a bare `OSError`, and
+  separating them would mean splitting the read/write loop for a distinction no message needs.
+  `DOWNLOAD_ERROR_DIGEST` is the one worth treating as more than bad luck.
+- **Every failure path goes through `_discard_and_fail()`**, so no path can record a reason while
+  leaving something runnable on disk.
+
 `download()` verifies the result against the published size and SHA-256 **before the caller ever
 executes it** — the caller is about to run this file as an installer, so the check is the only
 thing standing between a corrupted or substituted download and code execution. A failed download,
@@ -71,6 +83,11 @@ The whole update feature as one object, and the only one of these an app constru
 - **Every network call runs on a `daemon=True` thread and comes back through
   `display.after(0, ...)`.** Tk is not thread-safe; touching a widget from the worker is the bug
   this shape exists to prevent. A new background step follows the same pattern.
+- **`last_download_error` is how a download's reason reaches an app** (#6). The coordinator builds
+  its `UpdateDownloader` inside `_run_install` and never hands it out, so copying `last_error` onto
+  itself before `display.after(0, on_finished, started)` is the only way out. Reporting it *through*
+  the display would mean widening `FinishedCallback` or the `UpdateDisplay` Protocol — both
+  pin-moving changes that break two apps with no import to warn you.
 - **The failure message is chosen from `CHECK_FAILED_MESSAGES`, keyed by the checker's
   `last_error`** (#6). A rate-limited check earns its own wording because nothing is wrong with
   the machine and the same check succeeds later untouched; "check your internet connection" sends
