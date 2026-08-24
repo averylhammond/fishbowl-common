@@ -42,12 +42,10 @@ signature is not one PR but three** — here, then `FishbowlInvoiceTool`, then
 
 ## Common Commands
 
-- Run all unit tests: `pytest` — a bare invocation works only because
-  `[tool.pytest.ini_options]` sets `python_files = ["*_tests.py"]`. **Do not remove that block**
-  or a bare `pytest` collects nothing and CI passes vacuously.
-- Run a single test file: `pytest tests/UpdateChecker_tests.py`
+- Run all unit tests: `pytest`
+- Run a single test file: `pytest tests/test_UpdateChecker.py`
 - Run a single test:
-  `pytest tests/UpdateChecker_tests.py::test_check_for_update_returns_none_on_network_error`
+  `pytest tests/test_UpdateChecker.py::test_check_for_update_returns_none_on_network_error`
 - Run with coverage: `pytest --cov=fishbowl_common --cov-report=term-missing`
 - Byte-compile sanity check:
   `python -m py_compile fishbowl_common/*.py fishbowl_common/gui/*.py tests/*.py tests/gui/*.py`
@@ -94,7 +92,7 @@ consistently with the main window behind it.
   on `ubuntu-latest` with no display. Four things enforce it, all load-bearing:
   `fishbowl_common/__init__.py` never touches `gui`; `UpdateCoordinator` types its collaborator
   as `UpdateDisplay(Protocol)` rather than importing a window; the empty `[gui]` extra marks the
-  split in the consumers' pins; and `tests/headless_import_tests.py` fails the build if it stops
+  split in the consumers' pins; and `tests/test_headless_import.py` fails the build if it stops
   being true. **A new headless module that needs to talk to a window gets a Protocol, not an
   import.**
 - **`report_error` is the callback pattern for a failure the user should see.**
@@ -119,17 +117,16 @@ consistently with the main window behind it.
 
 ## Unit Testing
 
-Tests live in `tests/`, mirroring the package: `tests/<ClassName>_tests.py` per source module,
-and `tests/gui/` for `fishbowl_common/gui/`. Test files use the `_tests.py` **suffix**, not the
-pytest-default `test_` prefix. `tests/__init__.py` and `tests/gui/__init__.py` are empty but
-load-bearing; there is deliberately **no `conftest.py`**.
+Tests live in `tests/`, mirroring the package: `tests/test_<ClassName>.py` per source module,
+and `tests/gui/` for `fishbowl_common/gui/`. `tests/__init__.py` and `tests/gui/__init__.py` are
+empty but load-bearing; there is deliberately **no `conftest.py`**.
 
 Every unit test exercises exactly **one** class or function, with all collaborators mocked. Never
 let a unit test touch the real network, a real GUI, or the real filesystem.
 
 **Before writing a test, open the reference implementation and mirror it** —
-`tests/UpdateCoordinator_tests.py` for a class with injected collaborators,
-`tests/gui/UpdateWindow_tests.py` for a window. Reading either loads the full conventions from
+`tests/test_UpdateCoordinator.py` for a class with injected collaborators,
+`tests/gui/test_UpdateWindow.py` for a window. Reading either loads the full conventions from
 `.claude/rules/tests.md`.
 
 ## CI

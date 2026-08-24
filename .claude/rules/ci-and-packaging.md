@@ -6,12 +6,6 @@ paths:
 
 # CI and packaging
 
-**Do not remove `[tool.pytest.ini_options]`.** It sets `python_files = ["*_tests.py"]` and
-`testpaths = ["tests"]`. This project names its test files with the `_tests.py` suffix, which
-pytest's default `test_*.py` pattern does not match, so without that block a bare `pytest`
-collects nothing and CI passes vacuously. (It is also why the two apps, which have no such block,
-invoke `pytest tests/*`.)
-
 ## The three workflows
 
 Two run on `pull_request` to `main` and `workflow_dispatch`; the third runs only on a pushed `v*`

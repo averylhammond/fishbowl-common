@@ -5,15 +5,15 @@ paths:
 
 # Unit testing conventions
 
-Tests live in `tests/`, mirroring the package: `tests/<ClassName>_tests.py` per source module,
+Tests live in `tests/`, mirroring the package: `tests/test_<ClassName>.py` per source module,
 and `tests/gui/` for `fishbowl_common/gui/`. `tests/__init__.py` and `tests/gui/__init__.py` are
 empty but **load-bearing** — with them present, pytest's prepend import mode puts the repo root
 on `sys.path`, which is what makes `from fishbowl_common import ...` resolve. There is
 deliberately **no `conftest.py`**; all pytest and coverage configuration lives in
 `pyproject.toml`.
 
-`tests/UpdateCoordinator_tests.py` (a class with injected collaborators) and
-`tests/gui/UpdateWindow_tests.py` (the richest widget-patching fixture) are the two reference
+`tests/test_UpdateCoordinator.py` (a class with injected collaborators) and
+`tests/gui/test_UpdateWindow.py` (the richest widget-patching fixture) are the two reference
 implementations — mirror them rather than inventing new patterns.
 
 ## Test one object in isolation
@@ -38,7 +38,7 @@ network, a real GUI, or the real filesystem.
   anything outside the Protocol fails the test rather than passing silently.
 - **GUI tests never open a window** — the `_build_window()` patching stack is described in
   `.claude/rules/gui.md`.
-- **`tests/headless_import_tests.py` is an enforcement test, not a unit test.** It blocks
+- **`tests/test_headless_import.py` is an enforcement test, not a unit test.** It blocks
   `tkinter` through `builtins.__import__`, evicts the cached `tkinter*`/`fishbowl_common*`
   entries from `sys.modules`, then asserts `fishbowl_common` imports cleanly and
   `fishbowl_common.gui` raises `ImportError`. Do not delete or weaken it while refactoring
@@ -55,8 +55,7 @@ The generic principles are assumed. The three that constrain this suite specific
 
 ## Naming and structure
 
-- Test files are named `<ClassName>_tests.py` (suffix, not the pytest-default `test_` prefix).
-  `[tool.pytest.ini_options]` in `pyproject.toml` is what makes a bare `pytest` find them.
+- Test files are named `test_<ClassName>.py`, matching pytest's default discovery.
 - Flat module-level `test_<method>_<behavior>` functions — no test classes.
 - Group tests under the `###`-bordered banners used throughout the file:
   `<Class> -> Test Fixture`, `<Class> -> Test Helpers`, then one `Tests <Class> -> <method>()`
@@ -66,5 +65,5 @@ The generic principles are assumed. The three that constrain this suite specific
 
 ## The one acknowledged gap
 
-`tests/SettingsRepository_tests.py` never executes the SQL it asserts, so the tests would pass
+`tests/test_SettingsRepository.py` never executes the SQL it asserts, so the tests would pass
 against a wrong schema (#11). Detail in `.claude/rules/settings-repository.md`.

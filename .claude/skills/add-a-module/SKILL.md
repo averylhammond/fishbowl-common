@@ -11,7 +11,7 @@ description: Checklist for adding a new class, module, or public name to fishbow
 
 If a headless module needs to talk to a window, **give it a `typing.Protocol`, not an import** —
 that is how `UpdateCoordinator` takes an `UpdateDisplay` without dragging tkinter into the
-headless half. `tests/headless_import_tests.py` fails the build if the split is ever broken.
+headless half. `tests/test_headless_import.py` fails the build if the split is ever broken.
 
 If only one app wants it, it does not belong here at all; this package is for what both apps need.
 
@@ -46,9 +46,9 @@ half-empty wheel.
 
 ## 6. Write the tests
 
-Create `tests/<ClassName>_tests.py` (or `tests/gui/<ClassName>_tests.py`). **Open the reference
-implementation first** — `tests/UpdateCoordinator_tests.py` for a class with injected
-collaborators, `tests/gui/UpdateWindow_tests.py` for a window — and mirror it. Reading either one
+Create `tests/test_<ClassName>.py` (or `tests/gui/test_<ClassName>.py`). **Open the reference
+implementation first** — `tests/test_UpdateCoordinator.py` for a class with injected
+collaborators, `tests/gui/test_UpdateWindow.py` for a window — and mirror it. Reading either one
 loads the full conventions from `.claude/rules/tests.md`. Coverage is at 100% on every measured
 module; a new module landing untested should fail the check.
 

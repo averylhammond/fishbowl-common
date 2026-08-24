@@ -1,7 +1,7 @@
 ---
 paths:
   - "fishbowl_common/SettingsRepository.py"
-  - "tests/SettingsRepository_tests.py"
+  - "tests/test_SettingsRepository.py"
 ---
 
 # `SettingsRepository`
@@ -32,7 +32,7 @@ as `(title, message)` from inside one `except` block per method, never re-raisin
 
 ## The test gap
 
-`tests/SettingsRepository_tests.py` patches `sqlite3.connect` and asserts the SQL as literal
+`tests/test_SettingsRepository.py` patches `sqlite3.connect` and asserts the SQL as literal
 strings, so **the tests would still pass if the schema were wrong** — nothing ever executes it. A
 `tmp_path` round-trip covering save-then-read and the upsert is tracked as #11, and is the one
 place a real (temporary) file is the right call.

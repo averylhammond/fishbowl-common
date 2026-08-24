@@ -25,9 +25,6 @@ dev = [
 packages = ["fishbowl_common", "fishbowl_common.gui"]
 
 [tool.pytest.ini_options]
-# This project names its test files "*_tests.py" rather than pytest's default
-# "test_*.py", so widen discovery to match them.
-python_files = ["*_tests.py"]
 testpaths = ["tests"]
 
 [tool.coverage.run]
