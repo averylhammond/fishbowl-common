@@ -13,6 +13,8 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-08-24
+
 ### Changed
 
 - The coverage gate is now 90% rather than 80%, matching both consuming apps, and the
@@ -193,7 +195,8 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
 - Initial release: `ArgumentProvider`, `SettingsRepository` and `UpdateChecker`, their unit
   tests, and the unit-test workflow.
 
-[Unreleased]: https://github.com/averylhammond/fishbowl-common/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/averylhammond/fishbowl-common/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/averylhammond/fishbowl-common/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/averylhammond/fishbowl-common/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/averylhammond/fishbowl-common/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/averylhammond/fishbowl-common/compare/v1.1.0...v1.2.0
