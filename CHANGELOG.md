@@ -13,6 +13,21 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-08-24
+
+### Changed
+
+- `UpdateCheckResult` and `ReleaseAsset` are now frozen dataclasses, so a result compares by
+  value, prints its fields, and cannot be edited on its way from the check to the display.
+  Both were hand-written classes with no `__eq__` or `__repr__`, so two results describing the
+  same release compared unequal and a failed assertion printed a hex address rather than the
+  fields that differed. `ReleaseAsset` was converted alongside the result because the generated
+  `__eq__` compares fields with `==`: left as a plain class it would have fallen back to
+  identity and made two otherwise-equal results compare unequal, so the equality would have
+  held only for results carrying no assets. Both constructors keep their field names, order and
+  defaults, and neither app assigns to a result, so moving the pin changes nothing else.
+  ([#7](https://github.com/averylhammond/fishbowl-common/issues/7))
+
 ## [1.4.0] - 2026-08-24
 
 ### Changed
@@ -195,7 +210,8 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
 - Initial release: `ArgumentProvider`, `SettingsRepository` and `UpdateChecker`, their unit
   tests, and the unit-test workflow.
 
-[Unreleased]: https://github.com/averylhammond/fishbowl-common/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/averylhammond/fishbowl-common/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/averylhammond/fishbowl-common/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/averylhammond/fishbowl-common/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/averylhammond/fishbowl-common/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/averylhammond/fishbowl-common/compare/v1.2.0...v1.2.1
