@@ -2,6 +2,7 @@ import fnmatch
 import json
 import urllib.error
 import urllib.request
+from dataclasses import dataclass
 
 from fishbowl_common.version_utils import compare_versions
 
@@ -49,66 +50,46 @@ TOO_MANY_REQUESTS_STATUS = 429
 
 # ReleaseAsset is a plain data holder describing one file published alongside a
 # GitHub release, carrying what a downloader needs to fetch and size-check it.
+# Frozen so what a check surfaced cannot be reshaped before it is downloaded.
+@dataclass(frozen=True)
 class ReleaseAsset:
 
-    ###########################################################################
-    ###                      ReleaseAsset -> __init__()                     ###
-    ###########################################################################
-    def __init__(self, name: str, download_url: str, size: int | None):
-        """
-        Initializes the ReleaseAsset with the asset's identity and location.
+    # The asset's filename as published on the release, e.g.
+    # "FishbowlInvoiceTool_Setup.exe".
+    name: str
 
-        Args:
-            name (str): The asset's filename as published on the release, e.g.
-                "FishbowlInvoiceTool_Setup.exe".
-            download_url (str): The asset's direct download URL.
-            size (int | None): The asset's size in bytes as reported by GitHub, or
-                None if the response did not carry one.
-        """
+    # The asset's direct download URL.
+    download_url: str
 
-        self.name = name
-        self.download_url = download_url
-        self.size = size
+    # The asset's size in bytes as reported by GitHub, or None if the response did
+    # not carry one.
+    size: int | None
 
 
 # UpdateCheckResult is a plain data holder describing the outcome of comparing the
-# latest published release against the running application version.
+# latest published release against the running application version. Frozen so a
+# result handed to a display cannot be edited on its way through.
+@dataclass(frozen=True)
 class UpdateCheckResult:
 
-    ###########################################################################
-    ###                  UpdateCheckResult -> __init__()                    ###
-    ###########################################################################
-    def __init__(
-        self,
-        update_available: bool,
-        latest_version: str,
-        release_url: str,
-        installer_asset: ReleaseAsset | None = None,
-        checksums_asset: ReleaseAsset | None = None,
-    ):
-        """
-        Initializes the UpdateCheckResult with the comparison outcome and the
-        details needed to point the user at the new release.
+    # True if the latest published release is strictly newer than the running
+    # version.
+    update_available: bool
 
-        Args:
-            update_available (bool): True if the latest published release is
-                strictly newer than the running version.
-            latest_version (str): The latest release's version, normalized with any
-                leading "v" stripped (e.g. "3.1.0").
-            release_url (str): The URL of the latest release's page on GitHub.
-            installer_asset (ReleaseAsset | None): The release's installer, matched
-                against the caller's asset pattern, or None when the release
-                publishes no matching asset (or no pattern was injected).
-            checksums_asset (ReleaseAsset | None): The release's checksums file,
-                against which the installer is verified before it is executed, or
-                None when the release publishes none.
-        """
+    # The latest release's version, normalized with any leading "v" stripped
+    # (e.g. "3.1.0").
+    latest_version: str
 
-        self.update_available = update_available
-        self.latest_version = latest_version
-        self.release_url = release_url
-        self.installer_asset = installer_asset
-        self.checksums_asset = checksums_asset
+    # The URL of the latest release's page on GitHub.
+    release_url: str
+
+    # The release's installer, matched against the caller's asset pattern, or None
+    # when the release publishes no matching asset (or no pattern was injected).
+    installer_asset: ReleaseAsset | None = None
+
+    # The release's checksums file, against which the installer is verified before
+    # it is executed, or None when the release publishes none.
+    checksums_asset: ReleaseAsset | None = None
 
 
 # UpdateChecker queries the GitHub releases API for the latest published release

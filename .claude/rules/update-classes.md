@@ -29,6 +29,12 @@ constructs; the rest are its collaborators.
   cleared at the top of every call. It is the *only* thing separating those failures for a
   caller, and `UpdateCoordinator` reads it to word a manual check's popup — see the
   no-`report_error` rule below, which it does not break.
+- **`UpdateCheckResult` and `ReleaseAsset` are both `@dataclass(frozen=True)`, and both halves
+  of that matter** (#7). `frozen` keeps a result the check reported from being edited by any
+  caller it passes through; the generated `__eq__` compares fields with `==`, so `ReleaseAsset`
+  had to be converted alongside it — left as a plain class, it would fall back to identity and
+  make two otherwise-equal results compare unequal. A new field on either is annotated on the
+  class, not assigned in an `__init__`, and must itself compare by value.
 - **The version comparison is not its own.** `check_for_update()` calls `compare_versions()`
   from `version_utils`; the private `_parse_version()` it used to carry was extracted there when
   `PatchNotes` came to need the identical comparison (#22), and fixed while it moved (#5). Do

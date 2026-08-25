@@ -1,9 +1,14 @@
 import json
 import urllib.error
+from dataclasses import FrozenInstanceError
 from unittest.mock import patch, MagicMock
 
+import pytest
+
 from fishbowl_common.UpdateChecker import (
+    ReleaseAsset,
     UpdateChecker,
+    UpdateCheckResult,
     CHECK_ERROR_HTTP,
     CHECK_ERROR_NETWORK,
     CHECK_ERROR_RATE_LIMITED,
@@ -95,6 +100,27 @@ def _asset(name: str, size: int = 1024):
         "browser_download_url": f"https://example.com/{name}",
         "size": size,
     }
+
+
+def _result(latest_version: str = "3.2.0", **overrides):
+    """
+    Builds an UpdateCheckResult directly, without a check to produce it, so a test
+    comparing two results differs from the other by the one argument it overrides.
+
+    Args:
+        latest_version (str): The version to carry under latest_version.
+        **overrides: Any remaining field to set, e.g. installer_asset.
+
+    Returns:
+        UpdateCheckResult: The result to compare.
+    """
+
+    return UpdateCheckResult(
+        update_available=True,
+        latest_version=latest_version,
+        release_url="https://example.com/release",
+        **overrides,
+    )
 
 
 ###############################################################################
@@ -592,3 +618,55 @@ def test_check_for_update_finds_the_checksums_asset_by_injected_name(mock_urlope
     ).check_for_update()
 
     assert result.checksums_asset.name == "checksums.txt"
+
+
+###############################################################################
+###             Tests UpdateChecker -> result value semantics               ###
+###############################################################################
+def test_results_with_the_same_fields_are_equal():
+    """
+    Verifies that two results describing the same release compare equal, so a
+    caller can assert against a whole expected result rather than field by field.
+    """
+
+    assert _result() == _result()
+
+
+def test_results_carrying_equal_assets_are_equal():
+    """
+    Verifies that equality holds through the nested assets. ReleaseAsset is frozen
+    for this reason: the generated __eq__ compares fields with ==, so a plain class
+    there would fall back to identity and make two otherwise-equal results unequal.
+    """
+
+    installer = ReleaseAsset(
+        "App_Setup.exe", "https://example.com/App_Setup.exe", 4096
+    )
+    same_installer = ReleaseAsset(
+        "App_Setup.exe", "https://example.com/App_Setup.exe", 4096
+    )
+
+    assert _result(installer_asset=installer) == _result(
+        installer_asset=same_installer
+    )
+
+
+def test_results_differing_in_any_field_are_not_equal():
+    """
+    Verifies that a differing field makes two results unequal, so the equality
+    above is comparing values rather than passing on everything alike.
+    """
+
+    assert _result(latest_version="3.2.0") != _result(latest_version="3.2.1")
+
+
+def test_a_result_cannot_be_modified_after_it_is_built():
+    """
+    Verifies that a result is immutable, so what a check reported cannot be edited
+    by a caller it is handed to on its way to the user.
+    """
+
+    result = _result()
+
+    with pytest.raises(FrozenInstanceError):
+        result.latest_version = "9.9.9"
