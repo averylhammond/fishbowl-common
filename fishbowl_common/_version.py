@@ -13,4 +13,4 @@
 # Keep this file to the single literal assignment: setuptools resolves the
 # [tool.setuptools.dynamic] attr by parsing the module rather than importing it only
 # while it stays this simple.
-__version__ = "1.4.0"
+__version__ = "1.5.0"
