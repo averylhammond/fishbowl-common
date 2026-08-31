@@ -38,20 +38,19 @@ class PatchNotesWindow(ThemedSubwindow):
         theme: Theme,
         font_family: str,
         font_size: int,
-    ):
+    ) -> None:
         """
         Initializes the PatchNotesWindow object
 
         Args:
-            parent (tk.Misc): The parent window this window is attached to
-            title (str): Title of the patch notes window
-            app_name (str): The application name to display in the heading
-            version (str): The version whose notes are being announced
-            notes (str): The notes to display, already selected by the caller
-            theme (Theme): The color theme to style the window with, snapshotted
-                at open time
-            font_family (str): The font family to display the text with
-            font_size (int): The font size to display the text with
+            parent: The parent window this window is attached to
+            title: Title of the patch notes window
+            app_name: The application name to display in the heading
+            version: The version whose notes are being announced
+            notes: The notes to display, already selected by the caller
+            theme: The color theme to style the window with, snapshotted at open time
+            font_family: The font family to display the text with
+            font_size: The font size to display the text with
         """
 
         super().__init__(parent, title, theme, font_family, font_size)
@@ -76,13 +75,13 @@ class PatchNotesWindow(ThemedSubwindow):
     ###########################################################################
     ###                 PatchNotesWindow -> build_widgets()                 ###
     ###########################################################################
-    def build_widgets(self, notes: str):
+    def build_widgets(self, notes: str) -> None:
         """
         Creates the heading, the read-only notes box and the Close button used to
         dismiss the window
 
         Args:
-            notes (str): The notes to display in the text box
+            notes: The notes to display in the text box
         """
 
         # Heading naming the application and the version being announced

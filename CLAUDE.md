@@ -117,6 +117,15 @@ consistently with the main window behind it.
   files carry the mirror of this rule ("do not re-add a local copy — fix or extend them in
   `fishbowl-common` and bump the pin"). A helper duplicated across the two apps is a candidate
   for this package; one only the invoice tool wants is not.
+- **Every `def` in `fishbowl_common/` is fully annotated**: every parameter, and a return type on
+  every function including `-> None`. Spell container types out — `list[str]`, `dict[str, str]` —
+  since a bare `list` tells a reader (and a type checker) nothing. This matters more here than in
+  either app: the package ships `py.typed`, so these are the annotations a type checker in both
+  apps actually reads. **The annotation is the only place a type is written**: an `Args:` entry is
+  `name: description` and a `Returns:` block is the description alone, with no parenthesized or
+  prefixed type repeating the signature. Both apps carry the mirror of this rule. Under `tests/`
+  the docstring type stays, since fixture and mock parameters are unannotated — see
+  `.claude/rules/tests.md`.
 - Keep comments concise: a comment should explain only what the immediately adjacent code does.
   Do not document another module's behavior from a call site.
 

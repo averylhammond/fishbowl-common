@@ -24,18 +24,16 @@ class ThemedSubwindow(tk.Toplevel):
         theme: Theme,
         font_family: str,
         font_size: int,
-    ):
+    ) -> None:
         """
         Initializes the common state shared by every themed subwindow
 
         Args:
-            parent (tk.Misc): The parent window this window is attached to and
-                centered over
-            title (str): Title shown in the window's title bar
-            theme (Theme): The color theme to style the window with, snapshotted
-                at open time
-            font_family (str): The font family to display the text with
-            font_size (int): The font size to display the text with
+            parent: The parent window this window is attached to and centered over
+            title: Title shown in the window's title bar
+            theme: The color theme to style the window with, snapshotted at open time
+            font_family: The font family to display the text with
+            font_size: The font size to display the text with
         """
 
         super().__init__(parent)
@@ -52,7 +50,7 @@ class ThemedSubwindow(tk.Toplevel):
     ###########################################################################
     ###               ThemedSubwindow -> _center_over_parent()             ###
     ###########################################################################
-    def _center_over_parent(self):
+    def _center_over_parent(self) -> None:
         """
         Positions this window centered over its parent (the window it was opened
         from) so it appears near the application rather than in the top-left

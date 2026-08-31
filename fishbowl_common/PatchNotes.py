@@ -27,7 +27,7 @@ class PatchNotes:
     ###########################################################################
     ###                       PatchNotes -> __init__()                      ###
     ###########################################################################
-    def __init__(self, notes_path: Path):
+    def __init__(self, notes_path: Path) -> None:
         """
         Initializes the PatchNotes reader with the file it reads from.
 
@@ -36,8 +36,8 @@ class PatchNotes:
         application.
 
         Args:
-            notes_path (Path): The changelog file shipped with the application,
-                holding one "## X.Y.Z" section per released version.
+            notes_path: The changelog file shipped with the application, holding one "##
+                X.Y.Z" section per released version.
         """
 
         self.notes_path = notes_path
@@ -60,18 +60,18 @@ class PatchNotes:
         the application from starting.
 
         Args:
-            current_version (str): The running application's version. Sections
-                newer than this are ignored, so notes for a version the user is
-                not actually running are never announced.
-            last_seen_version (str | None): The version the user last launched,
-                or None for no lower bound at all (every section up to and
-                including current_version). Deciding that a user with no stored
-                version should be shown nothing belongs to the caller, which is
-                the only side that can tell a fresh install from an upgrade.
+            current_version: The running application's version. Sections newer than this
+                are ignored, so notes for a version the user is not actually running are
+                never announced.
+            last_seen_version: The version the user last launched, or None for no lower
+                bound at all (every section up to and including current_version).
+                Deciding that a user with no stored version should be shown nothing
+                belongs to the caller, which is the only side that can tell a fresh
+                install from an upgrade.
 
         Returns:
-            str: The matching sections, newest first, separated by a blank line,
-                or an empty string if there are none.
+            The matching sections, newest first, separated by a blank line, or an empty
+            string if there are none.
         """
 
         wanted = [
@@ -108,9 +108,9 @@ class PatchNotes:
         several versions still says which notes belong to which release.
 
         Returns:
-            list[tuple[str, str]]: The version each section announces paired with
-                the section's text, in the order they appear in the file. Empty
-                if the file could not be read or holds no version headings.
+            The version each section announces paired with the section's text, in the
+            order they appear in the file. Empty if the file could not be read or holds
+            no version headings.
         """
 
         try:

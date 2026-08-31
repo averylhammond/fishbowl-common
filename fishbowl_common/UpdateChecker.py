@@ -3,6 +3,7 @@ import json
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from typing import Any
 
 from fishbowl_common.version_utils import compare_versions
 
@@ -108,22 +109,22 @@ class UpdateChecker:
         repo: str,
         asset_pattern: str | None = None,
         checksums_name: str = DEFAULT_CHECKSUMS_NAME,
-    ):
+    ) -> None:
         """
         Initializes the UpdateChecker with the version to compare against and the
         repository to check for releases.
 
         Args:
-            current_version (str): The running application's version, injected by the
-                caller (typically from its own VERSION constant).
-            repo (str): The GitHub repository in "owner/name" form whose latest
-                release is compared against current_version.
-            asset_pattern (str | None): An fnmatch pattern naming the release's
-                installer, e.g. "FishbowlInvoiceTool_Setup.exe" or "*_Setup.exe".
-                Injected because each application names its installer differently;
-                when omitted, no installer asset is surfaced.
-            checksums_name (str): Name of the release asset listing each asset's
-                SHA-256 digest.
+            current_version: The running application's version, injected by the caller
+                (typically from its own VERSION constant).
+            repo: The GitHub repository in "owner/name" form whose latest release is
+                compared against current_version.
+            asset_pattern: An fnmatch pattern naming the release's installer, e.g.
+                "FishbowlInvoiceTool_Setup.exe" or "*_Setup.exe". Injected because each
+                application names its installer differently; when omitted, no installer
+                asset is surfaced.
+            checksums_name: Name of the release asset listing each asset's SHA-256
+                digest.
         """
 
         self.current_version = current_version
@@ -157,8 +158,8 @@ class UpdateChecker:
         message accordingly.
 
         Returns:
-            UpdateCheckResult | None: The comparison outcome and release details, or
-                None if the latest release could not be retrieved or parsed.
+            The comparison outcome and release details, or None if the latest release
+            could not be retrieved or parsed.
         """
 
         self.last_error = None
@@ -224,10 +225,10 @@ class UpdateChecker:
         ever a rate limit and carries neither header reliably.
 
         Args:
-            error (urllib.error.HTTPError): The failure GitHub answered with.
+            error: The failure GitHub answered with.
 
         Returns:
-            bool: True if the request was rejected for rate limiting.
+            True if the request was rejected for rate limiting.
         """
 
         if error.code == TOO_MANY_REQUESTS_STATUS:
@@ -249,10 +250,10 @@ class UpdateChecker:
         Records why the check failed and yields the silent failure the caller sees.
 
         Args:
-            reason (str): One of the CHECK_ERROR_* values.
+            reason: One of the CHECK_ERROR_* values.
 
         Returns:
-            None: Always, so an except block can `return self._fail(...)`.
+            Always, so an except block can `return self._fail(...)`.
         """
 
         self.last_error = reason
@@ -261,7 +262,9 @@ class UpdateChecker:
     ###########################################################################
     ###                    UpdateChecker -> _find_asset()                   ###
     ###########################################################################
-    def _find_asset(self, assets: list, pattern: str | None) -> ReleaseAsset | None:
+    def _find_asset(
+        self, assets: list[dict[str, Any]], pattern: str | None
+    ) -> ReleaseAsset | None:
         """
         Picks the first published asset whose filename matches a pattern.
 
@@ -271,12 +274,12 @@ class UpdateChecker:
         is what makes the consumer fall back to the manual download flow.
 
         Args:
-            assets (list): The release's "assets" array from the GitHub API.
-            pattern (str | None): An fnmatch pattern naming the wanted asset, or
-                None to match nothing.
+            assets: The release's "assets" array from the GitHub API.
+            pattern: An fnmatch pattern naming the wanted asset, or None to match
+                nothing.
 
         Returns:
-            ReleaseAsset | None: The matching asset, or None if there is none.
+            The matching asset, or None if there is none.
         """
 
         if not pattern:

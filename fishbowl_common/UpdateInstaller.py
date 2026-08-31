@@ -63,7 +63,7 @@ class UpdateInstaller:
         else the caller keeps the manual download flow instead.
 
         Returns:
-            bool: True on Windows, False otherwise.
+            True on Windows, False otherwise.
         """
 
         return sys.platform == "win32"
@@ -81,12 +81,12 @@ class UpdateInstaller:
         before it could replace anything.
 
         Args:
-            installer (Path): The verified installer to run.
-            log_path (Path | None): Where the installer should write its own log,
-                or None to let it log nowhere.
+            installer: The verified installer to run.
+            log_path: Where the installer should write its own log, or None to let it
+                log nowhere.
 
         Returns:
-            bool: True if the installer was started, False if it could not be.
+            True if the installer was started, False if it could not be.
         """
 
         command = [str(installer), *SILENT_ARGS, RELAUNCH_ARG]
@@ -120,7 +120,7 @@ class UpdateInstaller:
         resolve to 0, which Popen accepts and ignores.
 
         Returns:
-            int: The creation flags to hand Popen.
+            The creation flags to hand Popen.
         """
 
         return getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(
@@ -130,7 +130,7 @@ class UpdateInstaller:
     ###########################################################################
     ###              UpdateInstaller -> _clean_environment()               ###
     ###########################################################################
-    def _clean_environment(self) -> dict:
+    def _clean_environment(self) -> dict[str, str]:
         """
         Builds the environment to start the installer with: this process's own,
         less the variables PyInstaller's bootloader exported into it.
@@ -140,7 +140,7 @@ class UpdateInstaller:
         internals have no business reaching it.
 
         Returns:
-            dict: The environment to hand Popen.
+            The environment to hand Popen.
         """
 
         return {

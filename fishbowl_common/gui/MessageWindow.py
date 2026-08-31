@@ -23,18 +23,17 @@ class MessageWindow(ThemedSubwindow):
         theme: Theme,
         font_family: str,
         font_size: int,
-    ):
+    ) -> None:
         """
         Initializes the MessageWindow object
 
         Args:
-            parent (tk.Misc): The parent window this window is attached to
-            title (str): Title of the message window
-            message (str): The message to display to the user
-            theme (Theme): The color theme to style the window with, snapshotted
-                at open time
-            font_family (str): The font family to display the text with
-            font_size (int): The font size to display the text with
+            parent: The parent window this window is attached to
+            title: Title of the message window
+            message: The message to display to the user
+            theme: The color theme to style the window with, snapshotted at open time
+            font_family: The font family to display the text with
+            font_size: The font size to display the text with
         """
 
         super().__init__(parent, title, theme, font_family, font_size)
@@ -57,7 +56,7 @@ class MessageWindow(ThemedSubwindow):
     ###########################################################################
     ###                   MessageWindow -> build_widgets()                 ###
     ###########################################################################
-    def build_widgets(self):
+    def build_widgets(self) -> None:
         """
         Creates the label showing the message and the OK button used to dismiss
         the window

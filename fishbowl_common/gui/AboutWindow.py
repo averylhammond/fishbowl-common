@@ -25,19 +25,18 @@ class AboutWindow(ThemedSubwindow):
         theme: Theme,
         font_family: str,
         font_size: int,
-    ):
+    ) -> None:
         """
         Initializes the AboutWindow object
 
         Args:
-            parent (tk.Misc): The parent window this window is attached to
-            title (str): Title of the about window
-            app_name (str): The application name to display
-            version (str): The current application version to display
-            theme (Theme): The color theme to style the window with, snapshotted
-                at open time
-            font_family (str): The font family to display the text with
-            font_size (int): The font size to display the text with
+            parent: The parent window this window is attached to
+            title: Title of the about window
+            app_name: The application name to display
+            version: The current application version to display
+            theme: The color theme to style the window with, snapshotted at open time
+            font_family: The font family to display the text with
+            font_size: The font size to display the text with
         """
 
         super().__init__(parent, title, theme, font_family, font_size)
@@ -61,7 +60,7 @@ class AboutWindow(ThemedSubwindow):
     ###########################################################################
     ###                    AboutWindow -> build_widgets()                  ###
     ###########################################################################
-    def build_widgets(self):
+    def build_widgets(self) -> None:
         """
         Creates the label showing the application name and current version, and
         the Close button used to dismiss the window

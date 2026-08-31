@@ -15,18 +15,18 @@ class SettingsRepository:
         self,
         db_path: Path,
         report_error: Callable[[str, str], None] = lambda *_: None,
-    ):
+    ) -> None:
         """
         Initializes the SettingsRepository, ensuring the database file and its
         settings table exist.
 
         Args:
-            db_path (Path): Location of the SQLite database file. Injected by the
-                consuming application so this repository stays application-agnostic.
-            report_error (Callable[[str, str], None]): Callback used to surface a
-                database failure to the user, taking an error title and message.
-                Defaults to a no-op so the repository never depends on a reporter
-                being wired in (the controller injects the GUI's error popup).
+            db_path: Location of the SQLite database file. Injected by the consuming
+                application so this repository stays application-agnostic.
+            report_error: Callback used to surface a database failure to the user,
+                taking an error title and message. Defaults to a no-op so the repository
+                never depends on a reporter being wired in (the controller injects the
+                GUI's error popup).
         """
 
         # Location of the SQLite database file backing this repository
@@ -42,7 +42,7 @@ class SettingsRepository:
     ###########################################################################
     ###              SettingsRepository -> initialize_database()            ###
     ###########################################################################
-    def initialize_database(self):
+    def initialize_database(self) -> None:
         """
         Ensures the data directory, database file, and settings table exist.
 
@@ -73,13 +73,13 @@ class SettingsRepository:
     ###########################################################################
     ###               SettingsRepository -> get_all_settings()             ###
     ###########################################################################
-    def get_all_settings(self) -> dict:
+    def get_all_settings(self) -> dict[str, str]:
         """
         Reads every persisted setting from the database.
 
         Returns:
-            dict: A mapping of each setting key to its stored string value. Empty
-                if the database is fresh or could not be read.
+            A mapping of each setting key to its stored string value. Empty if the
+            database is fresh or could not be read.
         """
 
         try:
@@ -98,14 +98,14 @@ class SettingsRepository:
     ###########################################################################
     ###                 SettingsRepository -> save_setting()                ###
     ###########################################################################
-    def save_setting(self, key: str, value: str):
+    def save_setting(self, key: str, value: str) -> None:
         """
         Persists a single setting, inserting it or updating it if the key already
         exists.
 
         Args:
-            key (str): The setting's identifier (e.g. "theme", "font_family").
-            value (str): The setting's value to store.
+            key: The setting's identifier (e.g. "theme", "font_family").
+            value: The setting's value to store.
         """
 
         try:

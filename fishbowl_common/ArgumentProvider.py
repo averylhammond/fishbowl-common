@@ -7,15 +7,15 @@ class ArgumentProvider:
     ###########################################################################
     ###                   ArgumentProvider -> __init__()                    ###
     ###########################################################################
-    def __init__(self, description: str = "Fishbowl desktop application"):
+    def __init__(self, description: str = "Fishbowl desktop application") -> None:
         """
         Initializes the ArgumentProvider object
 
         This includes parsing command line arguments to determine application settings
 
         Args:
-            description (str): Program description shown in the --help output. Accepted
-                as an argument so each consuming application can label its own CLI while
+            description: Program description shown in the --help output. Accepted as an
+                argument so each consuming application can label its own CLI while
                 sharing this parser.
         """
 
@@ -30,7 +30,7 @@ class ArgumentProvider:
     ###########################################################################
     ###                ArgumentProvider -> parse_arguments()                ###
     ###########################################################################
-    def parse_arguments(self):
+    def parse_arguments(self) -> None:
         """
         Parses command line arguments and stores them as attributes of the object.
         """
