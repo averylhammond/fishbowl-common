@@ -108,7 +108,7 @@ class UpdateChecker:
         repo: str,
         asset_pattern: str | None = None,
         checksums_name: str = DEFAULT_CHECKSUMS_NAME,
-    ):
+    ) -> None:
         """
         Initializes the UpdateChecker with the version to compare against and the
         repository to check for releases.

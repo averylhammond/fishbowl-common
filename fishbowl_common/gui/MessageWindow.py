@@ -23,7 +23,7 @@ class MessageWindow(ThemedSubwindow):
         theme: Theme,
         font_family: str,
         font_size: int,
-    ):
+    ) -> None:
         """
         Initializes the MessageWindow object
 
@@ -57,7 +57,7 @@ class MessageWindow(ThemedSubwindow):
     ###########################################################################
     ###                   MessageWindow -> build_widgets()                 ###
     ###########################################################################
-    def build_widgets(self):
+    def build_widgets(self) -> None:
         """
         Creates the label showing the message and the OK button used to dismiss
         the window

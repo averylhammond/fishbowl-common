@@ -56,7 +56,9 @@ DEFAULT_CHECK_FAILED_MESSAGE = (
 # any tkinter import, even though the object passed in is a Tk window.
 class UpdateDisplay(Protocol):
 
-    def after(self, ms: int, func=None, *args) -> str:
+    def after(
+        self, ms: int, func: Callable[..., object] | None = None, *args: object
+    ) -> str:
         """
         Schedules a callback to run on the GUI thread after a delay.
 
@@ -110,7 +112,7 @@ class UpdateCoordinator:
         repo: str,
         display: UpdateDisplay,
         asset_pattern: str | None = None,
-    ):
+    ) -> None:
         """
         Initializes the UpdateCoordinator with the values the check needs and the
         window that presents its outcome.

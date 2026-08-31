@@ -24,7 +24,7 @@ class ThemedSubwindow(tk.Toplevel):
         theme: Theme,
         font_family: str,
         font_size: int,
-    ):
+    ) -> None:
         """
         Initializes the common state shared by every themed subwindow
 
@@ -52,7 +52,7 @@ class ThemedSubwindow(tk.Toplevel):
     ###########################################################################
     ###               ThemedSubwindow -> _center_over_parent()             ###
     ###########################################################################
-    def _center_over_parent(self):
+    def _center_over_parent(self) -> None:
         """
         Positions this window centered over its parent (the window it was opened
         from) so it appears near the application rather than in the top-left

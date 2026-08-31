@@ -25,7 +25,7 @@ class AboutWindow(ThemedSubwindow):
         theme: Theme,
         font_family: str,
         font_size: int,
-    ):
+    ) -> None:
         """
         Initializes the AboutWindow object
 
@@ -61,7 +61,7 @@ class AboutWindow(ThemedSubwindow):
     ###########################################################################
     ###                    AboutWindow -> build_widgets()                  ###
     ###########################################################################
-    def build_widgets(self):
+    def build_widgets(self) -> None:
         """
         Creates the label showing the application name and current version, and
         the Close button used to dismiss the window

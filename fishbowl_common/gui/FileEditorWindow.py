@@ -31,7 +31,7 @@ class FileEditorWindow(ThemedSubwindow):
         save_callback: Callable[[Path, str], None] | None = None,
         text_width: int | None = None,
         text_height: int | None = None,
-    ):
+    ) -> None:
         """
         Initializes the FileEditorWindow object
 
@@ -91,7 +91,7 @@ class FileEditorWindow(ThemedSubwindow):
     ###########################################################################
     ###                 FileEditorWindow -> build_widgets()                 ###
     ###########################################################################
-    def build_widgets(self, initial_text: str):
+    def build_widgets(self, initial_text: str) -> None:
         """
         Creates the text box and action buttons (Save when editable, plus Close)
         for the window
@@ -165,7 +165,7 @@ class FileEditorWindow(ThemedSubwindow):
     ###########################################################################
     ###                  FileEditorWindow -> handle_save()                  ###
     ###########################################################################
-    def handle_save(self):
+    def handle_save(self) -> None:
         """
         Reads the current contents of the text box and forwards them, along with
         the bound file path, to the save_callback so the file is persisted

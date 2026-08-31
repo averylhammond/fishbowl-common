@@ -23,7 +23,7 @@ class Tooltip:
         theme: Theme,
         font_family: str,
         font_size: int,
-    ):
+    ) -> None:
         """
         Initializes the Tooltip object and binds it to the target widget's hover
         events.
@@ -64,7 +64,7 @@ class Tooltip:
     ###########################################################################
     ###                    Tooltip -> _schedule_show()                     ###
     ###########################################################################
-    def _schedule_show(self, _event=None):
+    def _schedule_show(self, _event: tk.Event | None = None) -> None:
         """
         Schedules the tooltip to appear after SHOW_DELAY_MS, cancelling any show
         already pending so a single hover never queues multiple popups.
@@ -78,7 +78,7 @@ class Tooltip:
     ###########################################################################
     ###                         Tooltip -> _show()                         ###
     ###########################################################################
-    def _show(self):
+    def _show(self) -> None:
         """
         Creates and displays the borderless tooltip popup just below the widget.
         Does nothing if the tooltip is already shown or has no text.
@@ -115,7 +115,7 @@ class Tooltip:
     ###########################################################################
     ###                         Tooltip -> _hide()                         ###
     ###########################################################################
-    def _hide(self, _event=None):
+    def _hide(self, _event: tk.Event | None = None) -> None:
         """
         Hides the tooltip popup if shown and cancels any pending scheduled show.
 
@@ -130,7 +130,7 @@ class Tooltip:
     ###########################################################################
     ###                    Tooltip -> _cancel_scheduled()                  ###
     ###########################################################################
-    def _cancel_scheduled(self):
+    def _cancel_scheduled(self) -> None:
         """
         Cancels a pending scheduled show, if one exists, so it does not fire after
         the pointer has already left the widget.
@@ -142,7 +142,7 @@ class Tooltip:
     ###########################################################################
     ###                      Tooltip -> update_style()                     ###
     ###########################################################################
-    def update_style(self, theme: Theme, font_family: str, font_size: int):
+    def update_style(self, theme: Theme, font_family: str, font_size: int) -> None:
         """
         Updates the theme/font used for the tooltip so it stays consistent when
         the user changes the application's theme or font at runtime. If the

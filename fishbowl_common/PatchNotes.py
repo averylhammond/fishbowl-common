@@ -27,7 +27,7 @@ class PatchNotes:
     ###########################################################################
     ###                       PatchNotes -> __init__()                      ###
     ###########################################################################
-    def __init__(self, notes_path: Path):
+    def __init__(self, notes_path: Path) -> None:
         """
         Initializes the PatchNotes reader with the file it reads from.
 

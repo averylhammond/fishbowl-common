@@ -15,7 +15,7 @@ class SettingsRepository:
         self,
         db_path: Path,
         report_error: Callable[[str, str], None] = lambda *_: None,
-    ):
+    ) -> None:
         """
         Initializes the SettingsRepository, ensuring the database file and its
         settings table exist.
@@ -42,7 +42,7 @@ class SettingsRepository:
     ###########################################################################
     ###              SettingsRepository -> initialize_database()            ###
     ###########################################################################
-    def initialize_database(self):
+    def initialize_database(self) -> None:
         """
         Ensures the data directory, database file, and settings table exist.
 
@@ -98,7 +98,7 @@ class SettingsRepository:
     ###########################################################################
     ###                 SettingsRepository -> save_setting()                ###
     ###########################################################################
-    def save_setting(self, key: str, value: str):
+    def save_setting(self, key: str, value: str) -> None:
         """
         Persists a single setting, inserting it or updating it if the key already
         exists.

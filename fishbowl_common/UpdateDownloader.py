@@ -2,6 +2,7 @@ import hashlib
 import tempfile
 import urllib.error
 import urllib.request
+from http.client import HTTPResponse
 from pathlib import Path
 from typing import Callable
 
@@ -49,7 +50,7 @@ class UpdateDownloader:
     ###########################################################################
     ###                   UpdateDownloader -> __init__()                    ###
     ###########################################################################
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initializes the UpdateDownloader. It takes nothing: every value it works
         from arrives with the call, and it reaches the network and the disk
@@ -238,7 +239,9 @@ class UpdateDownloader:
     ###########################################################################
     ###                UpdateDownloader -> _response_size()                ###
     ###########################################################################
-    def _response_size(self, response, expected_size: int | None) -> int:
+    def _response_size(
+        self, response: HTTPResponse, expected_size: int | None
+    ) -> int:
         """
         Determines how many bytes the download is expected to be.
 

@@ -38,7 +38,7 @@ class PatchNotesWindow(ThemedSubwindow):
         theme: Theme,
         font_family: str,
         font_size: int,
-    ):
+    ) -> None:
         """
         Initializes the PatchNotesWindow object
 
@@ -76,7 +76,7 @@ class PatchNotesWindow(ThemedSubwindow):
     ###########################################################################
     ###                 PatchNotesWindow -> build_widgets()                 ###
     ###########################################################################
-    def build_widgets(self, notes: str):
+    def build_widgets(self, notes: str) -> None:
         """
         Creates the heading, the read-only notes box and the Close button used to
         dismiss the window
