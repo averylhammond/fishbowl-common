@@ -63,7 +63,10 @@ The generic principles are assumed. The three that constrain this suite specific
   `<Class> -> Test Fixture`, `<Class> -> Test Helpers`, then one `Tests <Class> -> <method>()`
   section per method, matching the banner style the source modules themselves use.
 - Give every test and helper a docstring describing what it verifies, with an `Args:` block
-  documenting every mock/fixture parameter.
+  documenting every mock/fixture parameter. **Keep the parenthesized type in those entries** —
+  `settings_repo (pytest.fixture)`, `mock_connect (unittest.mock.MagicMock)`. Test parameters are
+  unannotated, so unlike in `fishbowl_common/` the docstring is the only place the type is
+  written.
 
 ## The one carve-out from "no real I/O"
 

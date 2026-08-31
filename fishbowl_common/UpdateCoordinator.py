@@ -63,12 +63,12 @@ class UpdateDisplay(Protocol):
         Schedules a callback to run on the GUI thread after a delay.
 
         Args:
-            ms (int): Milliseconds to wait before running the callback.
-            func (Callable | None): The callback to run on the GUI thread.
+            ms: Milliseconds to wait before running the callback.
+            func: The callback to run on the GUI thread.
             *args: Positional arguments handed to the callback.
 
         Returns:
-            str: The scheduled callback's identifier.
+            The scheduled callback's identifier.
         """
 
     def show_update_available(
@@ -78,11 +78,11 @@ class UpdateDisplay(Protocol):
         Notifies the user that a newer release is available.
 
         Args:
-            result (UpdateCheckResult): The check outcome, exposing the newer
-                release's version and page URL.
-            start_install (StartInstall | None): Starts the download-and-install
-                flow, or None when this release cannot be installed in place and
-                the user must be sent to the release page instead.
+            result: The check outcome, exposing the newer release's version and page
+                URL.
+            start_install: Starts the download-and-install flow, or None when this
+                release cannot be installed in place and the user must be sent to the
+                release page instead.
         """
 
     def show_popup(self, title: str, message: str) -> None:
@@ -90,8 +90,8 @@ class UpdateDisplay(Protocol):
         Shows the user a short message.
 
         Args:
-            title (str): Title of the popup.
-            message (str): The message to display.
+            title: Title of the popup.
+            message: The message to display.
         """
 
 
@@ -118,16 +118,16 @@ class UpdateCoordinator:
         window that presents its outcome.
 
         Args:
-            current_version (str): The running application's version, injected by
-                the caller (typically from its own VERSION constant).
-            repo (str): The GitHub repository in "owner/name" form whose latest
-                release is compared against current_version.
-            display (UpdateDisplay): The application window that schedules work on
-                the GUI thread and presents the outcome to the user.
-            asset_pattern (str | None): An fnmatch pattern naming the release's
-                installer, e.g. "FishbowlInvoiceTool_Setup.exe". Injected because
-                each application names its installer differently; when omitted, the
-                user is offered only the manual download flow.
+            current_version: The running application's version, injected by the caller
+                (typically from its own VERSION constant).
+            repo: The GitHub repository in "owner/name" form whose latest release is
+                compared against current_version.
+            display: The application window that schedules work on the GUI thread and
+                presents the outcome to the user.
+            asset_pattern: An fnmatch pattern naming the release's installer, e.g.
+                "FishbowlInvoiceTool_Setup.exe". Injected because each application names
+                its installer differently; when omitted, the user is offered only the
+                manual download flow.
         """
 
         self.current_version = current_version
@@ -153,9 +153,8 @@ class UpdateCoordinator:
         never delay application shutdown.
 
         Args:
-            manual (bool): True when the check was triggered manually by the user
-                (who should always get feedback), False for the silent startup
-                check.
+            manual: True when the check was triggered manually by the user (who should
+                always get feedback), False for the silent startup check.
         """
 
         threading.Thread(target=self._run_check, args=(manual,), daemon=True).start()
@@ -172,8 +171,8 @@ class UpdateCoordinator:
         the toolkit is only ever touched from the thread that owns it.
 
         Args:
-            manual (bool): Passed through to _handle_result so it knows whether to
-                surface "up to date"/failure feedback.
+            manual: Passed through to _handle_result so it knows whether to surface "up
+                to date"/failure feedback.
         """
 
         checker = UpdateChecker(
@@ -207,12 +206,12 @@ class UpdateCoordinator:
         silent in those cases so the user is never interrupted on launch.
 
         Args:
-            result (UpdateCheckResult | None): The comparison outcome from
-                UpdateChecker.check_for_update(), or None if the check failed.
-            manual (bool): True when the check was triggered manually by the user,
-                enabling the up-to-date/failure feedback.
-            error (str | None): The checker's last_error, naming why the check
-                failed, or None when it did not fail (or did not say).
+            result: The comparison outcome from UpdateChecker.check_for_update(), or
+                None if the check failed.
+            manual: True when the check was triggered manually by the user, enabling the
+                up-to-date/failure feedback.
+            error: The checker's last_error, naming why the check failed, or None when
+                it did not fail (or did not say).
         """
 
         if result and result.update_available:
@@ -247,10 +246,10 @@ class UpdateCoordinator:
         offered the manual download instead.
 
         Args:
-            result (UpdateCheckResult): The outcome of the update check.
+            result: The outcome of the update check.
 
         Returns:
-            bool: True if the in-place install can be offered.
+            True if the in-place install can be offered.
         """
 
         return bool(
@@ -272,12 +271,12 @@ class UpdateCoordinator:
         Spawns a daemon thread that downloads the release's installer and starts it.
 
         Args:
-            result (UpdateCheckResult): The outcome of the update check, carrying
-                the installer and checksums assets to fetch.
-            on_progress (ProgressCallback): Called on the GUI thread with the bytes
-                received so far and the total expected.
-            on_finished (FinishedCallback): Called on the GUI thread with True once
-                the installer has been started, or False if any step failed.
+            result: The outcome of the update check, carrying the installer and
+                checksums assets to fetch.
+            on_progress: Called on the GUI thread with the bytes received so far and the
+                total expected.
+            on_finished: Called on the GUI thread with True once the installer has been
+                started, or False if any step failed.
         """
 
         threading.Thread(
@@ -305,12 +304,12 @@ class UpdateCoordinator:
         thread through display.after().
 
         Args:
-            result (UpdateCheckResult): The outcome of the update check, carrying
-                the installer and checksums assets to fetch.
-            on_progress (ProgressCallback): Called on the GUI thread with the bytes
-                received so far and the total expected.
-            on_finished (FinishedCallback): Called on the GUI thread with whether
-                the installer was started.
+            result: The outcome of the update check, carrying the installer and
+                checksums assets to fetch.
+            on_progress: Called on the GUI thread with the bytes received so far and the
+                total expected.
+            on_finished: Called on the GUI thread with whether the installer was
+                started.
         """
 
         downloader = UpdateDownloader()

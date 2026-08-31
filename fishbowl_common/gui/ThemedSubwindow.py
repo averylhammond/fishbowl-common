@@ -29,13 +29,11 @@ class ThemedSubwindow(tk.Toplevel):
         Initializes the common state shared by every themed subwindow
 
         Args:
-            parent (tk.Misc): The parent window this window is attached to and
-                centered over
-            title (str): Title shown in the window's title bar
-            theme (Theme): The color theme to style the window with, snapshotted
-                at open time
-            font_family (str): The font family to display the text with
-            font_size (int): The font size to display the text with
+            parent: The parent window this window is attached to and centered over
+            title: Title shown in the window's title bar
+            theme: The color theme to style the window with, snapshotted at open time
+            font_family: The font family to display the text with
+            font_size: The font size to display the text with
         """
 
         super().__init__(parent)

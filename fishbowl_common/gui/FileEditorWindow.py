@@ -36,27 +36,25 @@ class FileEditorWindow(ThemedSubwindow):
         Initializes the FileEditorWindow object
 
         Args:
-            parent (tk.Misc): The parent window this window is attached to
-            title (str): Title of the editor window
-            file_path (Path): The file path this window is viewing/editing, passed
-                back to the save_callback when the user saves
-            initial_text (str): The current file contents to display
-            theme (Theme): The color theme to style the window with, snapshotted at
-                open time
-            font_family (str): The font family to display the text with
-            font_size (int): The font size to display the text with
-            editable (bool): Whether the contents can be edited and saved. When
-                False, the text is read-only and no Save button is shown
-                (used for viewing log files). Defaults to True
-            save_callback (Callable[[Path, str], None] | None): Called with the
-                file path and the edited contents when the user saves. Required
-                when editable is True; ignored when editable is False
-            text_width (int | None): Width of the text box in character cells.
-                When None, tkinter's default width is used (suitable for short
-                files). A caller with a longer one can request a wider box for
-                easier reading
-            text_height (int | None): Height of the text box in character cells.
-                When None, tkinter's default height is used
+            parent: The parent window this window is attached to
+            title: Title of the editor window
+            file_path: The file path this window is viewing/editing, passed back to the
+                save_callback when the user saves
+            initial_text: The current file contents to display
+            theme: The color theme to style the window with, snapshotted at open time
+            font_family: The font family to display the text with
+            font_size: The font size to display the text with
+            editable: Whether the contents can be edited and saved. When False, the text
+                is read-only and no Save button is shown (used for viewing log files).
+                Defaults to True
+            save_callback: Called with the file path and the edited contents when the
+                user saves. Required when editable is True; ignored when editable is
+                False
+            text_width: Width of the text box in character cells. When None, tkinter's
+                default width is used (suitable for short files). A caller with a longer
+                one can request a wider box for easier reading
+            text_height: Height of the text box in character cells. When None, tkinter's
+                default height is used
         """
 
         super().__init__(parent, title, theme, font_family, font_size)
@@ -97,7 +95,7 @@ class FileEditorWindow(ThemedSubwindow):
         for the window
 
         Args:
-            initial_text (str): The current file contents to display in the text box
+            initial_text: The current file contents to display in the text box
         """
 
         # Text box displaying the file contents. A fixed-width font is used (rather

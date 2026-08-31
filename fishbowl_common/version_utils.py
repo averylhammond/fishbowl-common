@@ -27,11 +27,11 @@ def parse_version(version: str) -> tuple[int, ...]:
     deliberately does not.
 
     Args:
-        version (str): A dotted version string, optionally prefixed with "v"
-            (e.g. "v3.1.0" or "3.1.0").
+        version: A dotted version string, optionally prefixed with "v" (e.g. "v3.1.0" or
+            "3.1.0").
 
     Returns:
-        tuple[int, ...]: The version's numeric segments, e.g. (3, 1, 0).
+        The version's numeric segments, e.g. (3, 1, 0).
     """
 
     segments = []
@@ -62,12 +62,12 @@ def compare_versions(left: str, right: str) -> int:
     sorting first, which would report an update that does not exist.
 
     Args:
-        left (str): The version to compare.
-        right (str): The version to compare it against.
+        left: The version to compare.
+        right: The version to compare it against.
 
     Returns:
-        int: -1 if left is older than right, 0 if they are the same version, and
-            1 if left is newer.
+        -1 if left is older than right, 0 if they are the same version, and 1 if left is
+        newer.
     """
 
     left_segments = parse_version(left)

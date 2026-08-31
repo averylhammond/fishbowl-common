@@ -77,13 +77,13 @@ class UpdateDownloader:
         it stays verifiable by hand with sha256sum.
 
         Args:
-            checksums_url (str): Direct download URL of the checksums asset.
-            asset_name (str): Filename of the asset whose digest is wanted.
+            checksums_url: Direct download URL of the checksums asset.
+            asset_name: Filename of the asset whose digest is wanted.
 
         Returns:
-            str | None: The published digest in lowercase hex, or None if the file
-                could not be fetched or lists no digest for that asset. Why it
-                failed is recorded in last_error.
+            The published digest in lowercase hex, or None if the file could not be
+            fetched or lists no digest for that asset. Why it failed is recorded in
+            last_error.
         """
 
         self.last_error = None
@@ -149,19 +149,18 @@ class UpdateDownloader:
         for something else to find.
 
         Args:
-            url (str): Direct download URL of the asset.
-            destination (Path): Where to write the downloaded file.
-            expected_sha256 (str): The digest the finished file must hash to.
-            expected_size (int | None): The asset's published size in bytes, checked
-                against what actually arrived; None skips the size check.
-            progress (Callable[[int, int], None] | None): Called with the bytes
-                received so far and the total expected, so a caller can drive a
-                progress bar. The total is 0 when neither the response nor the
-                caller reports one.
+            url: Direct download URL of the asset.
+            destination: Where to write the downloaded file.
+            expected_sha256: The digest the finished file must hash to.
+            expected_size: The asset's published size in bytes, checked against what
+                actually arrived; None skips the size check.
+            progress: Called with the bytes received so far and the total expected, so a
+                caller can drive a progress bar. The total is 0 when neither the
+                response nor the caller reports one.
 
         Returns:
-            Path | None: The verified file, or None if the download or either check
-                failed. Why it failed is recorded in last_error.
+            The verified file, or None if the download or either check failed. Why it
+            failed is recorded in last_error.
         """
 
         self.last_error = None
@@ -228,10 +227,10 @@ class UpdateDownloader:
         application it is replacing is gone.
 
         Args:
-            asset_name (str): Filename to give the downloaded asset.
+            asset_name: Filename to give the downloaded asset.
 
         Returns:
-            Path: The path to download the asset to.
+            The path to download the asset to.
         """
 
         return Path(tempfile.mkdtemp(prefix="fishbowl-update-")) / asset_name
@@ -248,11 +247,11 @@ class UpdateDownloader:
         Args:
             response: The object returned by urlopen, whose headers may carry a
                 Content-Length.
-            expected_size (int | None): The size published for the asset, used when
-                the response does not report one.
+            expected_size: The size published for the asset, used when the response does
+                not report one.
 
         Returns:
-            int: The expected total in bytes, or 0 when neither source knows it.
+            The expected total in bytes, or 0 when neither source knows it.
         """
 
         try:
@@ -274,10 +273,10 @@ class UpdateDownloader:
         Records why the call failed and yields the silent failure the caller sees.
 
         Args:
-            reason (str): One of the DOWNLOAD_ERROR_* values.
+            reason: One of the DOWNLOAD_ERROR_* values.
 
         Returns:
-            None: Always, so an except block can `return self._fail(...)`.
+            Always, so an except block can `return self._fail(...)`.
         """
 
         self.last_error = reason
@@ -292,11 +291,11 @@ class UpdateDownloader:
         path can record a reason while leaving something runnable on disk.
 
         Args:
-            destination (Path): The file to delete; it need not exist.
-            reason (str): One of the DOWNLOAD_ERROR_* values.
+            destination: The file to delete; it need not exist.
+            reason: One of the DOWNLOAD_ERROR_* values.
 
         Returns:
-            None: Always, matching what a failed download returns.
+            Always, matching what a failed download returns.
         """
 
         self._discard(destination)
@@ -311,7 +310,7 @@ class UpdateDownloader:
         and run it.
 
         Args:
-            destination (Path): The file to delete; it need not exist.
+            destination: The file to delete; it need not exist.
         """
 
         try:

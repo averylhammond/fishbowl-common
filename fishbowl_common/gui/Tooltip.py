@@ -29,11 +29,11 @@ class Tooltip:
         events.
 
         Args:
-            widget (tk.Widget): The widget that shows this tooltip when hovered
-            text (str): The informational text to display on hover
-            theme (Theme): The color theme to style the tooltip with
-            font_family (str): The font family to display the text with
-            font_size (int): The font size to display the text with
+            widget: The widget that shows this tooltip when hovered
+            text: The informational text to display on hover
+            theme: The color theme to style the tooltip with
+            font_family: The font family to display the text with
+            font_size: The font size to display the text with
         """
 
         # The widget this tooltip is attached to
@@ -150,9 +150,9 @@ class Tooltip:
         styling on the next hover.
 
         Args:
-            theme (Theme): The new color theme to style the tooltip with
-            font_family (str): The new font family to display the text with
-            font_size (int): The new font size to display the text with
+            theme: The new color theme to style the tooltip with
+            font_family: The new font family to display the text with
+            font_size: The new font size to display the text with
         """
         self.theme = theme
         self.font_family = font_family

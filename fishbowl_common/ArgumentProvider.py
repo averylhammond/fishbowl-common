@@ -14,8 +14,8 @@ class ArgumentProvider:
         This includes parsing command line arguments to determine application settings
 
         Args:
-            description (str): Program description shown in the --help output. Accepted
-                as an argument so each consuming application can label its own CLI while
+            description: Program description shown in the --help output. Accepted as an
+                argument so each consuming application can label its own CLI while
                 sharing this parser.
         """
 
