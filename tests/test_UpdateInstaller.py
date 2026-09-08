@@ -15,9 +15,6 @@ _INSTALLER = Path("/tmp/fishbowl-update/App_Setup.exe")
 _LOG_PATH = Path("/tmp/fishbowl-update/App_Setup_install.log")
 
 
-###############################################################################
-###                    UpdateInstaller -> Test Fixture                      ###
-###############################################################################
 @pytest.fixture
 def installer():
     """
@@ -32,9 +29,6 @@ def installer():
     yield UpdateInstaller()
 
 
-###############################################################################
-###                    UpdateInstaller -> Test Helpers                      ###
-###############################################################################
 def _fake_subprocess(**flags):
     """
     Builds a stand-in for the subprocess module carrying only the attributes named,
@@ -50,9 +44,6 @@ def _fake_subprocess(**flags):
     return SimpleNamespace(Popen=MagicMock(), **flags)
 
 
-###############################################################################
-###                 Tests UpdateInstaller -> is_supported()                 ###
-###############################################################################
 def test_is_supported_is_true_on_windows():
     """
     Verifies that Windows - the platform the Inno Setup installer is built for - is
@@ -73,9 +64,6 @@ def test_is_supported_is_false_off_windows():
         assert UpdateInstaller.is_supported() is False
 
 
-###############################################################################
-###                    Tests UpdateInstaller -> launch()                    ###
-###############################################################################
 @patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
 def test_launch_runs_the_installer_silently_and_asks_for_a_relaunch(
     mock_popen, installer
@@ -206,9 +194,6 @@ def test_launch_returns_false_when_the_installer_cannot_be_started(
     assert installer.launch(_INSTALLER) is False
 
 
-###############################################################################
-###          Tests UpdateInstaller -> launch() -> silent switches           ###
-###############################################################################
 @patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
 def test_launch_lets_the_installer_force_close_the_application(mock_popen, installer):
     """
@@ -230,9 +215,6 @@ def test_launch_lets_the_installer_force_close_the_application(mock_popen, insta
     assert "/FORCECLOSEAPPLICATIONS" in command
 
 
-###############################################################################
-###           Tests UpdateInstaller -> launch() -> environment              ###
-###############################################################################
 @patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
 def test_launch_strips_the_pyinstaller_variables_from_the_environment(
     mock_popen, installer

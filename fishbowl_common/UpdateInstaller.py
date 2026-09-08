@@ -51,9 +51,6 @@ RELAUNCH_ARG = "/RELAUNCH=1"
 # application that started it rather than dying with it.
 class UpdateInstaller:
 
-    ###########################################################################
-    ###                   UpdateInstaller -> is_supported()                 ###
-    ###########################################################################
     @staticmethod
     def is_supported() -> bool:
         """
@@ -68,9 +65,6 @@ class UpdateInstaller:
 
         return sys.platform == "win32"
 
-    ###########################################################################
-    ###                      UpdateInstaller -> launch()                    ###
-    ###########################################################################
     def launch(self, installer: Path, log_path: Path | None = None) -> bool:
         """
         Starts the installer detached from this process, silently, asking it to
@@ -107,9 +101,6 @@ class UpdateInstaller:
 
         return True
 
-    ###########################################################################
-    ###                UpdateInstaller -> _detached_flags()                ###
-    ###########################################################################
     def _detached_flags(self) -> int:
         """
         Builds the process creation flags that detach the installer from this
@@ -127,9 +118,6 @@ class UpdateInstaller:
             subprocess, "CREATE_NEW_PROCESS_GROUP", 0
         )
 
-    ###########################################################################
-    ###              UpdateInstaller -> _clean_environment()               ###
-    ###########################################################################
     def _clean_environment(self) -> dict[str, str]:
         """
         Builds the environment to start the installer with: this process's own,

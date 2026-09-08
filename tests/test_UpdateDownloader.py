@@ -29,9 +29,6 @@ _PAYLOAD = b"".join(_CHUNKS)
 _PAYLOAD_SHA256 = hashlib.sha256(_PAYLOAD).hexdigest()
 
 
-###############################################################################
-###                   UpdateDownloader -> Test Fixture                      ###
-###############################################################################
 @pytest.fixture
 def downloader():
     """
@@ -51,9 +48,6 @@ def downloader():
     )
 
 
-###############################################################################
-###                   UpdateDownloader -> Test Helpers                      ###
-###############################################################################
 def _http_error(url, code=403):
     """
     Builds the HTTPError urlopen raises when the host answers with a status instead
@@ -135,9 +129,6 @@ def _text_response(text: str):
     return mock_context
 
 
-###############################################################################
-###            Tests UpdateDownloader -> fetch_expected_sha256()            ###
-###############################################################################
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
 def test_fetch_expected_sha256_returns_the_digest_published_for_the_asset(
     mock_urlopen, downloader
@@ -392,9 +383,6 @@ def test_fetch_expected_sha256_clears_the_error_once_a_fetch_succeeds(
     assert downloader.downloader.last_error is None
 
 
-###############################################################################
-###                   Tests UpdateDownloader -> download()                  ###
-###############################################################################
 @patch("fishbowl_common.UpdateDownloader.open")
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
 def test_download_writes_the_asset_and_returns_it_when_verified(
@@ -780,9 +768,6 @@ def test_download_survives_a_cleanup_that_itself_fails(
     )
 
 
-###############################################################################
-###             Tests UpdateDownloader -> default_destination()             ###
-###############################################################################
 @patch("fishbowl_common.UpdateDownloader.tempfile.mkdtemp")
 def test_default_destination_names_the_asset_inside_a_fresh_temp_directory(
     mock_mkdtemp, downloader

@@ -100,9 +100,6 @@ class UpdateCheckResult:
 # has everything it needs from the one request.
 class UpdateChecker:
 
-    ###########################################################################
-    ###                    UpdateChecker -> __init__()                      ###
-    ###########################################################################
     def __init__(
         self,
         current_version: str,
@@ -143,9 +140,6 @@ class UpdateChecker:
         # None while no check has failed. Set on every call to check_for_update().
         self.last_error: str | None = None
 
-    ###########################################################################
-    ###                UpdateChecker -> check_for_update()                  ###
-    ###########################################################################
     def check_for_update(self) -> UpdateCheckResult | None:
         """
         Fetches the latest published release from GitHub and compares it to the
@@ -210,9 +204,6 @@ class UpdateChecker:
             # missing the fields we rely on.
             return self._fail(CHECK_ERROR_RESPONSE)
 
-    ###########################################################################
-    ###                  UpdateChecker -> _is_rate_limited()                ###
-    ###########################################################################
     @staticmethod
     def _is_rate_limited(error: urllib.error.HTTPError) -> bool:
         """
@@ -242,9 +233,6 @@ class UpdateChecker:
 
         return headers.get("X-RateLimit-Remaining") == "0" or "Retry-After" in headers
 
-    ###########################################################################
-    ###                       UpdateChecker -> _fail()                      ###
-    ###########################################################################
     def _fail(self, reason: str) -> None:
         """
         Records why the check failed and yields the silent failure the caller sees.
@@ -259,9 +247,6 @@ class UpdateChecker:
         self.last_error = reason
         return None
 
-    ###########################################################################
-    ###                    UpdateChecker -> _find_asset()                   ###
-    ###########################################################################
     def _find_asset(
         self, assets: list[dict[str, Any]], pattern: str | None
     ) -> ReleaseAsset | None:

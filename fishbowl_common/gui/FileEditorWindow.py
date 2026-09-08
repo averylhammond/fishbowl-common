@@ -15,9 +15,6 @@ from fishbowl_common.gui.ThemedSubwindow import ThemedSubwindow
 # ThemedSubwindow.
 class FileEditorWindow(ThemedSubwindow):
 
-    ###########################################################################
-    ###                   FileEditorWindow -> __init__()                    ###
-    ###########################################################################
     def __init__(
         self,
         parent: tk.Misc,
@@ -86,9 +83,6 @@ class FileEditorWindow(ThemedSubwindow):
         # it default to the top-left corner of the screen
         self._center_over_parent()
 
-    ###########################################################################
-    ###                 FileEditorWindow -> build_widgets()                 ###
-    ###########################################################################
     def build_widgets(self, initial_text: str) -> None:
         """
         Creates the text box and action buttons (Save when editable, plus Close)
@@ -160,9 +154,6 @@ class FileEditorWindow(ThemedSubwindow):
         )
         self.close_button.grid(row=0, column=1 if self.editable else 0, padx=10)
 
-    ###########################################################################
-    ###                  FileEditorWindow -> handle_save()                  ###
-    ###########################################################################
     def handle_save(self) -> None:
         """
         Reads the current contents of the text box and forwards them, along with

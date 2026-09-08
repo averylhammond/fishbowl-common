@@ -13,9 +13,6 @@ from fishbowl_common.gui.color_theme import DARK
 from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
 
 
-###############################################################################
-###                      UpdateWindow -> Test Helpers                      ###
-###############################################################################
 def _distinct_widget(*_args, **_kwargs):
     """
     Side effect for patched tkinter widget classes that returns a fresh
@@ -96,9 +93,6 @@ def _build_window(
     )
 
 
-###############################################################################
-###                 Tests UpdateWindow -> build_widgets()                  ###
-###############################################################################
 def test_build_widgets_creates_label_and_buttons():
     """
     Verifies that build_widgets constructs the info label, the "Exit and Update"
@@ -177,9 +171,6 @@ def test_update_button_is_wired_to_open_release_page():
     assert update_kwargs["command"] == built.window._open_release_page
 
 
-###############################################################################
-###               Tests UpdateWindow -> _open_release_page()               ###
-###############################################################################
 def test_open_release_page_opens_url_in_browser():
     """
     Verifies that _open_release_page opens the release URL in the user's browser.
@@ -249,9 +240,6 @@ def test_open_release_page_disables_button_and_updates_label():
     built.window.update_button.config.assert_called_once_with(state=tk.DISABLED)
 
 
-###############################################################################
-###             Tests UpdateWindow -> the in-place install offer            ###
-###############################################################################
 def test_build_widgets_omits_the_install_offer_without_an_install_callback():
     """
     Verifies that a release with nothing installable in place builds the window as
@@ -300,9 +288,6 @@ def test_progress_bar_is_themed_and_left_unpacked_until_a_download_starts():
     built.window.progress_bar.pack.assert_not_called()
 
 
-###############################################################################
-###               Tests UpdateWindow -> _update_and_restart()               ###
-###############################################################################
 def test_update_and_restart_starts_the_install_with_its_own_callbacks():
     """
     Verifies that pressing "Update and Restart" hands the injected callback the two
@@ -367,9 +352,6 @@ def test_update_and_restart_blocks_the_manual_route_once_it_is_underway():
     mock_open.assert_not_called()
 
 
-###############################################################################
-###                  Tests UpdateWindow -> _on_progress()                   ###
-###############################################################################
 def test_on_progress_fills_the_bar_and_reports_the_percentage():
     """
     Verifies that a progress report redraws the bar to the fraction received and
@@ -421,9 +403,6 @@ def test_on_progress_clamps_a_transfer_that_overruns_its_declared_size():
     built.window.info_label.config.assert_called_with(text="Downloading update… 100%")
 
 
-###############################################################################
-###              Tests UpdateWindow -> _on_install_finished()               ###
-###############################################################################
 def test_on_install_finished_closes_the_application_once_the_installer_starts():
     """
     Verifies that a started installer closes the whole application after a short

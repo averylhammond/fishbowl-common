@@ -37,9 +37,6 @@ PROGRESS_BAR_HEIGHT = 14
 # application window (both handled by ThemedSubwindow).
 class UpdateWindow(ThemedSubwindow):
 
-    ###########################################################################
-    ###                     UpdateWindow -> __init__()                     ###
-    ###########################################################################
     def __init__(
         self,
         parent: tk.Misc,
@@ -107,9 +104,6 @@ class UpdateWindow(ThemedSubwindow):
         # it default to the top-left corner of the screen
         self._center_over_parent()
 
-    ###########################################################################
-    ###                   UpdateWindow -> build_widgets()                  ###
-    ###########################################################################
     def build_widgets(self) -> None:
         """
         Creates the label announcing the available version, the "Update and Restart"
@@ -182,9 +176,6 @@ class UpdateWindow(ThemedSubwindow):
         )
         self.close_button.pack(pady=(0, 20))
 
-    ###########################################################################
-    ###                 UpdateWindow -> _update_and_restart()              ###
-    ###########################################################################
     def _update_and_restart(self) -> None:
         """
         Downloads the release's installer, showing its progress, and hands the
@@ -210,9 +201,6 @@ class UpdateWindow(ThemedSubwindow):
 
         self.start_install_callback(self._on_progress, self._on_install_finished)
 
-    ###########################################################################
-    ###                    UpdateWindow -> _on_progress()                  ###
-    ###########################################################################
     def _on_progress(self, received: int, total: int) -> None:
         """
         Redraws the progress bar as the download advances.
@@ -241,9 +229,6 @@ class UpdateWindow(ThemedSubwindow):
                 text=f"Downloading update… {int(fraction * 100)}%"
             )
 
-    ###########################################################################
-    ###                UpdateWindow -> _on_install_finished()              ###
-    ###########################################################################
     def _on_install_finished(self, started: bool) -> None:
         """
         Handles the end of the download-and-install flow.
@@ -267,9 +252,6 @@ class UpdateWindow(ThemedSubwindow):
                 "Automatic update failed. Opening the release page…"
             )
 
-    ###########################################################################
-    ###                 UpdateWindow -> _open_release_page()               ###
-    ###########################################################################
     def _open_release_page(self) -> None:
         """
         Opens the release's GitHub page in the user's default browser so they can
@@ -284,9 +266,6 @@ class UpdateWindow(ThemedSubwindow):
 
         self._send_to_release_page()
 
-    ###########################################################################
-    ###               UpdateWindow -> _send_to_release_page()              ###
-    ###########################################################################
     def _send_to_release_page(
         self, message: str = "Closing to install update…"
     ) -> None:
@@ -318,9 +297,6 @@ class UpdateWindow(ThemedSubwindow):
         # sent to the download page, so the installer can replace the running exe
         self.after(CLOSE_DELAY_MS, self.close_app_callback)
 
-    ###########################################################################
-    ###                  UpdateWindow -> _disable_buttons()                ###
-    ###########################################################################
     def _disable_buttons(self) -> None:
         """
         Disables both update buttons, so neither route can be started while the

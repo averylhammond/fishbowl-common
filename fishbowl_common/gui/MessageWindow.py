@@ -12,9 +12,6 @@ from fishbowl_common.gui.ThemedSubwindow import ThemedSubwindow
 # application window (both handled by ThemedSubwindow).
 class MessageWindow(ThemedSubwindow):
 
-    ###########################################################################
-    ###                     MessageWindow -> __init__()                    ###
-    ###########################################################################
     def __init__(
         self,
         parent: tk.Misc,
@@ -53,9 +50,6 @@ class MessageWindow(ThemedSubwindow):
         # it default to the top-left corner (or center) of the screen
         self._center_over_parent()
 
-    ###########################################################################
-    ###                   MessageWindow -> build_widgets()                 ###
-    ###########################################################################
     def build_widgets(self) -> None:
         """
         Creates the label showing the message and the OK button used to dismiss

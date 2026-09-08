@@ -6,9 +6,6 @@ import re
 LEADING_DIGITS = re.compile(r"\d+")
 
 
-###############################################################################
-###                            parse_version()                              ###
-###############################################################################
 def parse_version(version: str) -> tuple[int, ...]:
     """
     Parses a version string into a tuple of integers for semantic comparison.
@@ -49,9 +46,6 @@ def parse_version(version: str) -> tuple[int, ...]:
     return tuple(segments)
 
 
-###############################################################################
-###                          compare_versions()                             ###
-###############################################################################
 def compare_versions(left: str, right: str) -> int:
     """
     Compares two version strings semantically.

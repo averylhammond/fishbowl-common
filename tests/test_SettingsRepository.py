@@ -7,9 +7,6 @@ from unittest.mock import patch, MagicMock
 from fishbowl_common.SettingsRepository import SettingsRepository
 
 
-###############################################################################
-###                  SettingsRepository -> Test Fixtures                    ###
-###############################################################################
 @pytest.fixture
 def settings_repo():
     """
@@ -75,9 +72,6 @@ def real_settings_repo(tmp_path):
     )
 
 
-###############################################################################
-###                    SettingsRepository -> Test Helpers                   ###
-###############################################################################
 def _query(db_path, sql: str) -> list:
     """
     Reads from the database file directly, so a test can inspect what the
@@ -96,9 +90,6 @@ def _query(db_path, sql: str) -> list:
         return connection.execute(sql).fetchall()
 
 
-###############################################################################
-###             Tests SettingsRepository -> initialize_database()           ###
-###############################################################################
 def test_init_creates_data_dir_and_settings_table(settings_repo):
     """
     Verifies that constructing the repository ensures the data directory exists and
@@ -173,9 +164,6 @@ def test_initialize_database_mkdir_error_is_reported(settings_repo):
     assert settings_repo.connect.call_count == 1
 
 
-###############################################################################
-###               Tests SettingsRepository -> get_all_settings()            ###
-###############################################################################
 def test_get_all_settings_returns_mapping(settings_repo):
     """
     Verifies that get_all_settings selects every row and returns the keys and
@@ -249,9 +237,6 @@ def test_get_all_settings_error_reports_and_returns_empty(settings_repo):
     settings_repo.report_error.assert_called_once()
 
 
-###############################################################################
-###                Tests SettingsRepository -> save_setting()               ###
-###############################################################################
 def test_save_setting_upserts_key_and_value(settings_repo):
     """
     Verifies that save_setting issues an upsert with the given key and value so an
@@ -325,9 +310,6 @@ def test_save_setting_closes_the_connection_on_error(settings_repo):
     settings_repo.connection.close.assert_called_once()
 
 
-###############################################################################
-###            Tests SettingsRepository -> Real SQLite Behavior             ###
-###############################################################################
 def test_initialize_database_creates_the_settings_schema(real_settings_repo):
     """
     Verifies that constructing the repository creates the data directory and a

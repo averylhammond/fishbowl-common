@@ -7,9 +7,6 @@ from fishbowl_common.gui.color_theme import DARK
 from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
 
 
-###############################################################################
-###                    PatchNotesWindow -> Test Helpers                     ###
-###############################################################################
 def _distinct_widget(*_args, **_kwargs):
     """
     Side effect for patched tkinter widget classes that returns a fresh
@@ -78,9 +75,6 @@ def _build_window(app_name="Test App", version="1.0", notes="- Added a thing"):
     )
 
 
-###############################################################################
-###               Tests PatchNotesWindow -> build_widgets()                 ###
-###############################################################################
 def test_build_widgets_creates_heading_text_box_and_close_button():
     """
     Verifies that build_widgets constructs the heading, the notes box and the

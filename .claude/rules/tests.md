@@ -59,9 +59,11 @@ The generic principles are assumed. The three that constrain this suite specific
 
 - Test files are named `test_<ClassName>.py`, matching pytest's default discovery.
 - Flat module-level `test_<method>_<behavior>` functions — no test classes.
-- Group tests under the `###`-bordered banners used throughout the file:
-  `<Class> -> Test Fixture`, `<Class> -> Test Helpers`, then one `Tests <Class> -> <method>()`
-  section per method, matching the banner style the source modules themselves use.
+- Keep the tests grouped by ordering alone: the fixtures first, then the helpers, then the tests
+  for each method in the order the source module defines them. **No banner comment blocks** — the
+  `###`-bordered headers that used to separate those groups were removed everywhere, in both
+  `tests/` and `fishbowl_common/`, and are not to come back. The function names and the order
+  carry the structure.
 - Give every test and helper a docstring describing what it verifies, with an `Args:` block
   documenting every mock/fixture parameter. **Keep the parenthesized type in those entries** —
   `settings_repo (pytest.fixture)`, `mock_connect (unittest.mock.MagicMock)`. Test parameters are

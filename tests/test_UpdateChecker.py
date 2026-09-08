@@ -26,9 +26,6 @@ _TEST_REPO = "owner/repo"
 _LATEST_RELEASE_URL = f"https://api.github.com/repos/{_TEST_REPO}/releases/latest"
 
 
-###############################################################################
-###                     UpdateChecker -> Test Helpers                       ###
-###############################################################################
 def _release_response(
     tag_name: str,
     html_url: str = "https://example.com/release",
@@ -123,9 +120,6 @@ def _result(latest_version: str = "3.2.0", **overrides):
     )
 
 
-###############################################################################
-###               Tests UpdateChecker -> check_for_update()                 ###
-###############################################################################
 @patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
 def test_check_for_update_returns_result_when_newer_release_exists(mock_urlopen):
     """
@@ -356,9 +350,6 @@ def test_check_for_update_returns_none_on_malformed_response(mock_urlopen):
     assert checker.last_error == CHECK_ERROR_RESPONSE
 
 
-###############################################################################
-###               Tests UpdateChecker -> last_error reporting               ###
-###############################################################################
 @patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
 def test_check_for_update_reports_an_exhausted_rate_limit(mock_urlopen):
     """
@@ -477,9 +468,6 @@ def test_check_for_update_clears_the_error_once_a_check_succeeds(mock_urlopen):
     assert checker.last_error is None
 
 
-###############################################################################
-###              Tests UpdateChecker -> release asset lookup                ###
-###############################################################################
 @patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
 def test_check_for_update_surfaces_the_installer_and_checksums_assets(mock_urlopen):
     """
@@ -620,9 +608,6 @@ def test_check_for_update_finds_the_checksums_asset_by_injected_name(mock_urlope
     assert result.checksums_asset.name == "checksums.txt"
 
 
-###############################################################################
-###             Tests UpdateChecker -> result value semantics               ###
-###############################################################################
 def test_results_with_the_same_fields_are_equal():
     """
     Verifies that two results describing the same release compare equal, so a

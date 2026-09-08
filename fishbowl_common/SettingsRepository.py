@@ -8,9 +8,6 @@ from typing import Callable
 # in a SQLite database so they survive between application restarts.
 class SettingsRepository:
 
-    ###########################################################################
-    ###                  SettingsRepository -> __init__()                   ###
-    ###########################################################################
     def __init__(
         self,
         db_path: Path,
@@ -39,9 +36,6 @@ class SettingsRepository:
         # the settings table exists.
         self.initialize_database()
 
-    ###########################################################################
-    ###              SettingsRepository -> initialize_database()            ###
-    ###########################################################################
     def initialize_database(self) -> None:
         """
         Ensures the data directory, database file, and settings table exist.
@@ -70,9 +64,6 @@ class SettingsRepository:
                 f"Could not initialize the settings database at {self.db_path}: {error}",
             )
 
-    ###########################################################################
-    ###               SettingsRepository -> get_all_settings()             ###
-    ###########################################################################
     def get_all_settings(self) -> dict[str, str]:
         """
         Reads every persisted setting from the database.
@@ -95,9 +86,6 @@ class SettingsRepository:
             )
             return {}
 
-    ###########################################################################
-    ###                 SettingsRepository -> save_setting()                ###
-    ###########################################################################
     def save_setting(self, key: str, value: str) -> None:
         """
         Persists a single setting, inserting it or updating it if the key already

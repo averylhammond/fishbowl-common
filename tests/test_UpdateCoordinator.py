@@ -23,9 +23,6 @@ _INSTALLER_NAME = "App_Setup.exe"
 _ASSET_PATTERN = "App_Setup.exe"
 
 
-###############################################################################
-###                    UpdateCoordinator -> Test Fixture                    ###
-###############################################################################
 @pytest.fixture
 def coordinator():
     """
@@ -52,9 +49,6 @@ def coordinator():
     )
 
 
-###############################################################################
-###                    UpdateCoordinator -> Test Helpers                    ###
-###############################################################################
 def _result(update_available=True, installer=True, checksums=True):
     """
     Builds a stand-in for an UpdateCheckResult, shaped like what UpdateChecker
@@ -95,9 +89,6 @@ def _result(update_available=True, installer=True, checksums=True):
     )
 
 
-###############################################################################
-###                   Tests UpdateCoordinator -> start()                    ###
-###############################################################################
 def test_start_spawns_a_started_daemon_worker_thread(coordinator):
     """
     Verifies that a check runs on a started daemon thread targeting the worker, so
@@ -138,9 +129,6 @@ def test_start_passes_the_manual_flag_to_the_worker(coordinator):
     )
 
 
-###############################################################################
-###                 Tests UpdateCoordinator -> _run_check()                 ###
-###############################################################################
 def test_run_check_schedules_the_result_on_the_gui_thread(coordinator):
     """
     Verifies that the worker performs the check with the injected version, repo and
@@ -176,9 +164,6 @@ def test_run_check_schedules_the_result_on_the_gui_thread(coordinator):
     coordinator.display.show_update_available.assert_not_called()
 
 
-###############################################################################
-###               Tests UpdateCoordinator -> _handle_result()               ###
-###############################################################################
 @patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
 def test_handle_result_shows_the_update_window_when_newer(
     mock_installer_cls, coordinator
@@ -411,9 +396,6 @@ def test_handle_result_reports_a_refused_request_without_blaming_the_connection(
     assert "internet connection" not in message
 
 
-###############################################################################
-###               Tests UpdateCoordinator -> start_install()                ###
-###############################################################################
 def test_start_install_spawns_a_started_daemon_worker_thread(coordinator):
     """
     Verifies that the download runs on a started daemon thread targeting the install
@@ -441,9 +423,6 @@ def test_start_install_spawns_a_started_daemon_worker_thread(coordinator):
     mock_thread_cls.return_value.start.assert_called_once_with()
 
 
-###############################################################################
-###                Tests UpdateCoordinator -> _run_install()                ###
-###############################################################################
 @patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
 @patch("fishbowl_common.UpdateCoordinator.UpdateDownloader")
 def test_run_install_verifies_and_starts_the_downloaded_installer(

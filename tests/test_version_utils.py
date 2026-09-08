@@ -1,9 +1,6 @@
 from fishbowl_common.version_utils import compare_versions, parse_version
 
 
-###############################################################################
-###                     Tests version_utils -> parse_version()              ###
-###############################################################################
 def test_parse_version_splits_a_dotted_version_into_integers():
     """
     Verifies that an ordinary dotted version is parsed into one integer per
@@ -53,9 +50,6 @@ def test_parse_version_returns_empty_tuple_for_an_unparseable_version():
     assert parse_version("not-a-version") == ()
 
 
-###############################################################################
-###                   Tests version_utils -> compare_versions()             ###
-###############################################################################
 def test_compare_versions_reports_a_newer_version():
     """
     Verifies that a strictly newer version compares greater, which is the check

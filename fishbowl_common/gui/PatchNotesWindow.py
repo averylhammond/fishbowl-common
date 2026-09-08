@@ -25,9 +25,6 @@ TEXT_HEIGHT = 20
 # application window (both handled by ThemedSubwindow).
 class PatchNotesWindow(ThemedSubwindow):
 
-    ###########################################################################
-    ###                    PatchNotesWindow -> __init__()                   ###
-    ###########################################################################
     def __init__(
         self,
         parent: tk.Misc,
@@ -72,9 +69,6 @@ class PatchNotesWindow(ThemedSubwindow):
         # it default to the top-left corner of the screen
         self._center_over_parent()
 
-    ###########################################################################
-    ###                 PatchNotesWindow -> build_widgets()                 ###
-    ###########################################################################
     def build_widgets(self, notes: str) -> None:
         """
         Creates the heading, the read-only notes box and the Close button used to

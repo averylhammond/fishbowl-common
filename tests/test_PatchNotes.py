@@ -27,9 +27,6 @@ _NOTES = "\n".join(
 )
 
 
-###############################################################################
-###                       PatchNotes -> Test Helpers                        ###
-###############################################################################
 def _reader(contents: str = _NOTES):
     """
     Builds a PatchNotes reader over a mocked notes file, so no test touches the
@@ -65,9 +62,6 @@ def _failing_reader(error: Exception):
     return PatchNotes(notes_path)
 
 
-###############################################################################
-###                    Tests PatchNotes -> notes_since()                    ###
-###############################################################################
 def test_notes_since_returns_the_section_for_a_single_new_version():
     """
     Verifies that a user who updated by one release is shown that release's

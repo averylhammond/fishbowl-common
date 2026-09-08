@@ -128,6 +128,10 @@ consistently with the main window behind it.
   `.claude/rules/tests.md`.
 - Keep comments concise: a comment should explain only what the immediately adjacent code does.
   Do not document another module's behavior from a call site.
+- **No banner comment blocks above a `def`.** The `###`-bordered headers naming each method were
+  removed from every source and test file; the signature and the docstring under it say the same
+  thing without a block to keep in sync with a rename. The two apps still use them, so a file
+  moved up from either one loses its banners on the way in.
 
 ## Unit Testing
 
@@ -181,7 +185,7 @@ when a matching file is opened, and in `.claude/skills/`, loaded when invoked.
 | --- | --- | --- |
 | `rules/update-classes.md` | `Update*.py` | The `UpdateInstaller` switch rationale, the download verification contract, coordinator threading |
 | `rules/gui.md` | `gui/**` | Window catalogue, `Tooltip` `add="+"`, the widget-patching test stack |
-| `rules/tests.md` | `tests/**` | Fixtures, patch targets, FIRST, banner and docstring conventions |
+| `rules/tests.md` | `tests/**` | Fixtures, patch targets, FIRST, ordering and docstring conventions |
 | `rules/ci-and-packaging.md` | `.github/workflows/**`, `pyproject.toml` | Workflow internals, release gates, coverage gaps |
 | `rules/versioning.md` | `version_utils.py`, `PatchNotes.py` | The never-raises contract, pre-release limitation, notes-range semantics |
 | `rules/settings-repository.md` | `SettingsRepository.py` | Text-only table, `report_error` mechanics, known defects |
