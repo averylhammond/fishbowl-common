@@ -13,9 +13,6 @@ from fishbowl_common.gui.ThemedSubwindow import ThemedSubwindow
 # window (both handled by ThemedSubwindow).
 class AboutWindow(ThemedSubwindow):
 
-    ###########################################################################
-    ###                      AboutWindow -> __init__()                     ###
-    ###########################################################################
     def __init__(
         self,
         parent: tk.Misc,
@@ -57,9 +54,6 @@ class AboutWindow(ThemedSubwindow):
         # it default to the top-left corner of the screen
         self._center_over_parent()
 
-    ###########################################################################
-    ###                    AboutWindow -> build_widgets()                  ###
-    ###########################################################################
     def build_widgets(self) -> None:
         """
         Creates the label showing the application name and current version, and

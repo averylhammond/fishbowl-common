@@ -4,9 +4,6 @@ import argparse
 # ArgumentProvider class to provide script arguments to any module that needs them
 class ArgumentProvider:
 
-    ###########################################################################
-    ###                   ArgumentProvider -> __init__()                    ###
-    ###########################################################################
     def __init__(self, description: str = "Fishbowl desktop application") -> None:
         """
         Initializes the ArgumentProvider object
@@ -27,9 +24,6 @@ class ArgumentProvider:
 
         self.parse_arguments()
 
-    ###########################################################################
-    ###                ArgumentProvider -> parse_arguments()                ###
-    ###########################################################################
     def parse_arguments(self) -> None:
         """
         Parses command line arguments and stores them as attributes of the object.

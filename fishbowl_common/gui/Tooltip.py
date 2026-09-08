@@ -13,9 +13,6 @@ class Tooltip:
     # flicker as the pointer merely passes over a widget on its way elsewhere.
     SHOW_DELAY_MS = 500
 
-    ###########################################################################
-    ###                       Tooltip -> __init__()                        ###
-    ###########################################################################
     def __init__(
         self,
         widget: tk.Widget,
@@ -61,9 +58,6 @@ class Tooltip:
         self.widget.bind("<Leave>", self._hide, add="+")
         self.widget.bind("<ButtonPress>", self._hide, add="+")
 
-    ###########################################################################
-    ###                    Tooltip -> _schedule_show()                     ###
-    ###########################################################################
     def _schedule_show(self, _event: tk.Event | None = None) -> None:
         """
         Schedules the tooltip to appear after SHOW_DELAY_MS, cancelling any show
@@ -75,9 +69,6 @@ class Tooltip:
         self._cancel_scheduled()
         self.scheduled_id = self.widget.after(self.SHOW_DELAY_MS, self._show)
 
-    ###########################################################################
-    ###                         Tooltip -> _show()                         ###
-    ###########################################################################
     def _show(self) -> None:
         """
         Creates and displays the borderless tooltip popup just below the widget.
@@ -112,9 +103,6 @@ class Tooltip:
         )
         label.pack()
 
-    ###########################################################################
-    ###                         Tooltip -> _hide()                         ###
-    ###########################################################################
     def _hide(self, _event: tk.Event | None = None) -> None:
         """
         Hides the tooltip popup if shown and cancels any pending scheduled show.
@@ -127,9 +115,6 @@ class Tooltip:
             self.tip_window.destroy()
             self.tip_window = None
 
-    ###########################################################################
-    ###                    Tooltip -> _cancel_scheduled()                  ###
-    ###########################################################################
     def _cancel_scheduled(self) -> None:
         """
         Cancels a pending scheduled show, if one exists, so it does not fire after
@@ -139,9 +124,6 @@ class Tooltip:
             self.widget.after_cancel(self.scheduled_id)
             self.scheduled_id = None
 
-    ###########################################################################
-    ###                      Tooltip -> update_style()                     ###
-    ###########################################################################
     def update_style(self, theme: Theme, font_family: str, font_size: int) -> None:
         """
         Updates the theme/font used for the tooltip so it stays consistent when

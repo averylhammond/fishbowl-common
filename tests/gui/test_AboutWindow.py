@@ -7,9 +7,6 @@ from fishbowl_common.gui.color_theme import DARK
 from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
 
 
-###############################################################################
-###                      AboutWindow -> Test Helpers                       ###
-###############################################################################
 def _distinct_widget(*_args, **_kwargs):
     """
     Side effect for patched tkinter widget classes that returns a fresh
@@ -64,9 +61,6 @@ def _build_window(app_name="Test App", version="1.0"):
     return SimpleNamespace(window=window, label_cls=label_cls, button_cls=button_cls)
 
 
-###############################################################################
-###                  Tests AboutWindow -> build_widgets()                  ###
-###############################################################################
 def test_build_widgets_creates_label_and_close_button():
     """
     Verifies that build_widgets constructs the info label and the Close button,

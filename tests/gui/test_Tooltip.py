@@ -6,9 +6,6 @@ from fishbowl_common.gui.color_theme import DARK, LIGHT
 from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
 
 
-###############################################################################
-###                        Tooltip -> Test Fixture                          ###
-###############################################################################
 @pytest.fixture
 def tooltip():
     """
@@ -35,9 +32,6 @@ def tooltip():
     )
 
 
-###############################################################################
-###                       Tests Tooltip -> __init__()                       ###
-###############################################################################
 def test_init_binds_hover_events(tooltip):
     """
     Verifies that __init__ binds the show/hide handlers to the widget's hover and
@@ -57,9 +51,6 @@ def test_init_binds_hover_events(tooltip):
         assert call.kwargs.get("add") == "+"
 
 
-###############################################################################
-###                    Tests Tooltip -> _schedule_show()                    ###
-###############################################################################
 def test_schedule_show_schedules_after_delay(tooltip):
     """
     Verifies that _schedule_show queues the popup to appear after the show delay
@@ -93,9 +84,6 @@ def test_schedule_show_cancels_existing_schedule(tooltip):
     tooltip.widget.after_cancel.assert_called_once_with("stale")
 
 
-###############################################################################
-###                        Tests Tooltip -> _show()                         ###
-###############################################################################
 @patch("fishbowl_common.gui.Tooltip.tk.Label")
 @patch("fishbowl_common.gui.Tooltip.tk.Toplevel")
 def test_show_creates_positioned_popup(mock_toplevel, mock_label, tooltip):
@@ -156,9 +144,6 @@ def test_show_does_nothing_without_text(mock_toplevel, tooltip):
     mock_toplevel.assert_not_called()
 
 
-###############################################################################
-###                        Tests Tooltip -> _hide()                         ###
-###############################################################################
 def test_hide_destroys_popup_and_cancels_schedule(tooltip):
     """
     Verifies that _hide tears down the popup and cancels any pending scheduled
@@ -179,9 +164,6 @@ def test_hide_destroys_popup_and_cancels_schedule(tooltip):
     tooltip.widget.after_cancel.assert_called_once_with("after#1")
 
 
-###############################################################################
-###                     Tests Tooltip -> update_style()                     ###
-###############################################################################
 def test_update_style_updates_attributes_and_rebuilds_when_shown(tooltip):
     """
     Verifies that update_style stores the new theme/font and hides a currently

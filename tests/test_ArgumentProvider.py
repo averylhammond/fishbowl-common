@@ -3,9 +3,6 @@ from unittest.mock import patch
 from fishbowl_common.ArgumentProvider import ArgumentProvider
 
 
-###############################################################################
-###             Tests ArgumentProvider -> __init__() / parse_arguments()    ###
-###############################################################################
 @patch("sys.argv", ["main.py"])
 def test_init_defaults_to_non_integration_test_mode():
     """

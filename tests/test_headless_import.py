@@ -6,9 +6,6 @@ from unittest.mock import patch
 import pytest
 
 
-###############################################################################
-###                    Headless Import -> Test Helpers                      ###
-###############################################################################
 def _reimport_without_tkinter(module_name: str):
     """
     Imports a module with tkinter made unavailable, mimicking a machine where the
@@ -51,9 +48,6 @@ def _reimport_without_tkinter(module_name: str):
         sys.modules.update(cached)
 
 
-###############################################################################
-###                    Tests Headless Import -> Package                     ###
-###############################################################################
 def test_top_level_package_imports_without_tkinter():
     """
     Verifies that the top-level package imports on a machine with no tkinter, and

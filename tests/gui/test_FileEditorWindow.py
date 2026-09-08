@@ -8,9 +8,6 @@ from fishbowl_common.gui.color_theme import DARK
 from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
 
 
-###############################################################################
-###                    FileEditorWindow -> Test Helpers                     ###
-###############################################################################
 def _distinct_widget(*_args, **_kwargs):
     """
     Side effect for patched tkinter widget classes that returns a fresh
@@ -86,9 +83,6 @@ def _build_window(
     return SimpleNamespace(window=window, file_path=file_path, text_cls=text_cls)
 
 
-###############################################################################
-###                Tests FileEditorWindow -> build_widgets()                ###
-###############################################################################
 def test_editable_window_inserts_text_and_builds_buttons():
     """
     Verifies that an editable window inserts the initial text into the text box,
@@ -199,9 +193,6 @@ def test_close_button_is_wired_to_destroy():
         assert close_call.kwargs["command"] == window.destroy
 
 
-###############################################################################
-###                 Tests FileEditorWindow -> handle_save()                 ###
-###############################################################################
 def test_handle_save_forwards_path_and_stripped_contents():
     """
     Verifies that handle_save reads the text box contents, strips the trailing

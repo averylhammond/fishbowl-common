@@ -7,9 +7,6 @@ from fishbowl_common.gui.color_theme import DARK
 from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
 
 
-###############################################################################
-###                    ThemedSubwindow -> Test Helpers                      ###
-###############################################################################
 def _build_subwindow():
     """
     Builds a ThemedSubwindow in complete isolation from tkinter: the real
@@ -38,9 +35,6 @@ def _build_subwindow():
     return SimpleNamespace(window=window, title=mock_title, configure=mock_configure)
 
 
-###############################################################################
-###                  Tests ThemedSubwindow -> __init__()                    ###
-###############################################################################
 def test_init_snapshots_theme_font_and_sets_title_and_background():
     """
     Verifies that the base constructor snapshots the active theme/font, sets the
@@ -59,9 +53,6 @@ def test_init_snapshots_theme_font_and_sets_title_and_background():
     built.configure.assert_called_once_with(bg=DARK.bg_main)
 
 
-###############################################################################
-###             Tests ThemedSubwindow -> _center_over_parent()              ###
-###############################################################################
 def test_center_over_parent_positions_window_over_parent():
     """
     Verifies that _center_over_parent positions the window so it is centered over

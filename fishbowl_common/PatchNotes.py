@@ -24,9 +24,6 @@ SECTION_SEPARATOR = "\n\n"
 # class carries no knowledge of which application it belongs to.
 class PatchNotes:
 
-    ###########################################################################
-    ###                       PatchNotes -> __init__()                      ###
-    ###########################################################################
     def __init__(self, notes_path: Path) -> None:
         """
         Initializes the PatchNotes reader with the file it reads from.
@@ -42,9 +39,6 @@ class PatchNotes:
 
         self.notes_path = notes_path
 
-    ###########################################################################
-    ###                     PatchNotes -> notes_since()                     ###
-    ###########################################################################
     def notes_since(self, current_version: str, last_seen_version: str | None) -> str:
         """
         Collects the notes for every version the user has not seen yet.
@@ -96,9 +90,6 @@ class PatchNotes:
 
         return SECTION_SEPARATOR.join(body for _version, body in wanted)
 
-    ###########################################################################
-    ###                    PatchNotes -> _read_sections()                   ###
-    ###########################################################################
     def _read_sections(self) -> list[tuple[str, str]]:
         """
         Splits the notes file into one section per version.

@@ -103,9 +103,6 @@ class UpdateDisplay(Protocol):
 # are sequenced and marshalled back onto the thread that owns the toolkit.
 class UpdateCoordinator:
 
-    ###########################################################################
-    ###                   UpdateCoordinator -> __init__()                   ###
-    ###########################################################################
     def __init__(
         self,
         current_version: str,
@@ -141,9 +138,6 @@ class UpdateCoordinator:
         # itself then refused to start.
         self.last_download_error: str | None = None
 
-    ###########################################################################
-    ###                     UpdateCoordinator -> start()                    ###
-    ###########################################################################
     def start(self, manual: bool = False) -> None:
         """
         Spawns a daemon thread that checks for a newer release.
@@ -159,9 +153,6 @@ class UpdateCoordinator:
 
         threading.Thread(target=self._run_check, args=(manual,), daemon=True).start()
 
-    ###########################################################################
-    ###                  UpdateCoordinator -> _run_check()                  ###
-    ###########################################################################
     def _run_check(self, manual: bool = False) -> None:
         """
         Worker-thread body for an update check.
@@ -186,9 +177,6 @@ class UpdateCoordinator:
         # never reaches back into a checker this thread owns.
         self.display.after(0, self._handle_result, result, manual, checker.last_error)
 
-    ###########################################################################
-    ###                UpdateCoordinator -> _handle_result()                ###
-    ###########################################################################
     def _handle_result(
         self,
         result: UpdateCheckResult | None,
@@ -233,9 +221,6 @@ class UpdateCoordinator:
                     f"You're running the latest version ({self.current_version}).",
                 )
 
-    ###########################################################################
-    ###                 UpdateCoordinator -> _can_install()                 ###
-    ###########################################################################
     def _can_install(self, result: UpdateCheckResult) -> bool:
         """
         Reports whether this release can be downloaded and installed in place.
@@ -258,9 +243,6 @@ class UpdateCoordinator:
             and UpdateInstaller.is_supported()
         )
 
-    ###########################################################################
-    ###                 UpdateCoordinator -> start_install()                ###
-    ###########################################################################
     def start_install(
         self,
         result: UpdateCheckResult,
@@ -285,9 +267,6 @@ class UpdateCoordinator:
             daemon=True,
         ).start()
 
-    ###########################################################################
-    ###                 UpdateCoordinator -> _run_install()                 ###
-    ###########################################################################
     def _run_install(
         self,
         result: UpdateCheckResult,

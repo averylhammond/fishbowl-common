@@ -14,9 +14,6 @@ from fishbowl_common.gui.color_theme import Theme
 # sized and positioned over the parent.
 class ThemedSubwindow(tk.Toplevel):
 
-    ###########################################################################
-    ###                    ThemedSubwindow -> __init__()                    ###
-    ###########################################################################
     def __init__(
         self,
         parent: tk.Misc,
@@ -47,9 +44,6 @@ class ThemedSubwindow(tk.Toplevel):
         self.title(title)
         self.configure(bg=theme.bg_main)
 
-    ###########################################################################
-    ###               ThemedSubwindow -> _center_over_parent()             ###
-    ###########################################################################
     def _center_over_parent(self) -> None:
         """
         Positions this window centered over its parent (the window it was opened

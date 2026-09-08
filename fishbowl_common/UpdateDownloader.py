@@ -47,9 +47,6 @@ DOWNLOAD_ERROR_DIGEST = "digest"
 # - comes back as None, so a caller can fall back to the manual download flow.
 class UpdateDownloader:
 
-    ###########################################################################
-    ###                   UpdateDownloader -> __init__()                    ###
-    ###########################################################################
     def __init__(self) -> None:
         """
         Initializes the UpdateDownloader. It takes nothing: every value it works
@@ -62,9 +59,6 @@ class UpdateDownloader:
         # call to fetch_expected_sha256() and download().
         self.last_error: str | None = None
 
-    ###########################################################################
-    ###             UpdateDownloader -> fetch_expected_sha256()             ###
-    ###########################################################################
     def fetch_expected_sha256(
         self, checksums_url: str, asset_name: str
     ) -> str | None:
@@ -129,9 +123,6 @@ class UpdateDownloader:
         # what stops an unverifiable installer from ever being downloaded.
         return self._fail(DOWNLOAD_ERROR_NO_DIGEST)
 
-    ###########################################################################
-    ###                    UpdateDownloader -> download()                   ###
-    ###########################################################################
     def download(
         self,
         url: str,
@@ -214,9 +205,6 @@ class UpdateDownloader:
 
         return destination
 
-    ###########################################################################
-    ###              UpdateDownloader -> default_destination()             ###
-    ###########################################################################
     def default_destination(self, asset_name: str) -> Path:
         """
         Builds a path to download an asset to, in a private temporary directory.
@@ -235,9 +223,6 @@ class UpdateDownloader:
 
         return Path(tempfile.mkdtemp(prefix="fishbowl-update-")) / asset_name
 
-    ###########################################################################
-    ###                UpdateDownloader -> _response_size()                ###
-    ###########################################################################
     def _response_size(
         self, response: HTTPResponse, expected_size: int | None
     ) -> int:
@@ -265,9 +250,6 @@ class UpdateDownloader:
 
         return expected_size or 0
 
-    ###########################################################################
-    ###                     UpdateDownloader -> _fail()                    ###
-    ###########################################################################
     def _fail(self, reason: str) -> None:
         """
         Records why the call failed and yields the silent failure the caller sees.
@@ -282,9 +264,6 @@ class UpdateDownloader:
         self.last_error = reason
         return None
 
-    ###########################################################################
-    ###               UpdateDownloader -> _discard_and_fail()              ###
-    ###########################################################################
     def _discard_and_fail(self, destination: Path, reason: str) -> None:
         """
         Deletes an unusable download and records why it was unusable, so no failure
@@ -301,9 +280,6 @@ class UpdateDownloader:
         self._discard(destination)
         return self._fail(reason)
 
-    ###########################################################################
-    ###                   UpdateDownloader -> _discard()                   ###
-    ###########################################################################
     def _discard(self, destination: Path) -> None:
         """
         Deletes a partial or unverified download, so nothing else can pick it up
