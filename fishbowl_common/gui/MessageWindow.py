@@ -11,7 +11,6 @@ from fishbowl_common.gui.ThemedSubwindow import ThemedSubwindow
 # it snapshots the active theme/font at open time and centers itself over the main
 # application window (both handled by ThemedSubwindow).
 class MessageWindow(ThemedSubwindow):
-
     def __init__(
         self,
         parent: tk.Misc,

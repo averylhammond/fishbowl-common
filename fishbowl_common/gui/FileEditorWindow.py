@@ -1,7 +1,7 @@
 import tkinter as tk
-from tkinter import scrolledtext
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
+from tkinter import scrolledtext
 
 from fishbowl_common.gui.color_theme import Theme
 from fishbowl_common.gui.font_settings import MONOSPACE_FONT_FAMILY
@@ -14,8 +14,13 @@ from fishbowl_common.gui.ThemedSubwindow import ThemedSubwindow
 # Theme/font snapshotting and centering over the parent are handled by
 # ThemedSubwindow.
 class FileEditorWindow(ThemedSubwindow):
-
-    def __init__(
+    # Eleven parameters is one over the max-args gate, and it stays that way. This
+    # constructor is the injection point that keeps the class application-agnostic:
+    # every app-specific value -- the title, the file, the theme, the fonts, the save
+    # callback -- arrives here rather than from a module-level default that would
+    # silently encode one app's choice. Widening the gate for the whole package would
+    # cost more than naming the one signature that earns it.
+    def __init__(  # noqa: PLR0913, PLR0917
         self,
         parent: tk.Misc,
         title: str,

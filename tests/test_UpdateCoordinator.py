@@ -1,7 +1,8 @@
-import pytest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from fishbowl_common.UpdateChecker import (
     CHECK_ERROR_HTTP,
@@ -99,14 +100,10 @@ def test_start_spawns_a_started_daemon_worker_thread(coordinator):
         coordinator (pytest.fixture): Provides the coordinator and its mock display
     """
 
-    with patch(
-        "fishbowl_common.UpdateCoordinator.threading.Thread"
-    ) as mock_thread_cls:
+    with patch("fishbowl_common.UpdateCoordinator.threading.Thread") as mock_thread_cls:
         coordinator.coordinator.start()
 
-    mock_thread_cls.assert_called_once_with(
-        target=coordinator.coordinator._run_check, args=(False,), daemon=True
-    )
+    mock_thread_cls.assert_called_once_with(target=coordinator.coordinator._run_check, args=(False,), daemon=True)
     mock_thread_cls.return_value.start.assert_called_once_with()
 
 
@@ -119,14 +116,10 @@ def test_start_passes_the_manual_flag_to_the_worker(coordinator):
         coordinator (pytest.fixture): Provides the coordinator and its mock display
     """
 
-    with patch(
-        "fishbowl_common.UpdateCoordinator.threading.Thread"
-    ) as mock_thread_cls:
+    with patch("fishbowl_common.UpdateCoordinator.threading.Thread") as mock_thread_cls:
         coordinator.coordinator.start(manual=True)
 
-    mock_thread_cls.assert_called_once_with(
-        target=coordinator.coordinator._run_check, args=(True,), daemon=True
-    )
+    mock_thread_cls.assert_called_once_with(target=coordinator.coordinator._run_check, args=(True,), daemon=True)
 
 
 def test_run_check_schedules_the_result_on_the_gui_thread(coordinator):
@@ -140,9 +133,7 @@ def test_run_check_schedules_the_result_on_the_gui_thread(coordinator):
         coordinator (pytest.fixture): Provides the coordinator and its mock display
     """
 
-    with patch(
-        "fishbowl_common.UpdateCoordinator.UpdateChecker"
-    ) as mock_checker_cls:
+    with patch("fishbowl_common.UpdateCoordinator.UpdateChecker") as mock_checker_cls:
         mock_result = mock_checker_cls.return_value.check_for_update.return_value
         coordinator.coordinator._run_check(manual=True)
 
@@ -165,9 +156,7 @@ def test_run_check_schedules_the_result_on_the_gui_thread(coordinator):
 
 
 @patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
-def test_handle_result_shows_the_update_window_when_newer(
-    mock_installer_cls, coordinator
-):
+def test_handle_result_shows_the_update_window_when_newer(mock_installer_cls, coordinator):
     """
     Verifies that a strictly newer release opens the update window on a startup
     check, with no redundant popup alongside it.
@@ -188,9 +177,7 @@ def test_handle_result_shows_the_update_window_when_newer(
 
 
 @patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
-def test_handle_result_shows_the_update_window_when_newer_on_a_manual_check(
-    mock_installer_cls, coordinator
-):
+def test_handle_result_shows_the_update_window_when_newer_on_a_manual_check(mock_installer_cls, coordinator):
     """
     Verifies that a manual check announces a newer release the same way a startup
     check does, without also reporting an outcome through a popup.
@@ -211,9 +198,7 @@ def test_handle_result_shows_the_update_window_when_newer_on_a_manual_check(
 
 
 @patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
-def test_handle_result_offers_the_install_when_the_release_can_be_installed(
-    mock_installer_cls, coordinator
-):
+def test_handle_result_offers_the_install_when_the_release_can_be_installed(mock_installer_cls, coordinator):
     """
     Verifies that a release publishing both assets, on a platform whose installer it
     is, reaches the window with a callback bound to this result - the callback the
@@ -265,9 +250,7 @@ def test_handle_result_withholds_the_install_when_it_cannot_be_offered(
 
     mock_installer_cls.is_supported.return_value = supported
 
-    coordinator.coordinator._handle_result(
-        _result(installer=installer, checksums=checksums)
-    )
+    coordinator.coordinator._handle_result(_result(installer=installer, checksums=checksums))
 
     assert coordinator.display.show_update_available.call_args.args[1] is None
 
@@ -367,9 +350,7 @@ def test_handle_result_blames_a_rate_limit_rather_than_the_connection(coordinato
         coordinator (pytest.fixture): Provides the coordinator and its mock display
     """
 
-    coordinator.coordinator._handle_result(
-        None, manual=True, error=CHECK_ERROR_RATE_LIMITED
-    )
+    coordinator.coordinator._handle_result(None, manual=True, error=CHECK_ERROR_RATE_LIMITED)
 
     coordinator.display.show_popup.assert_called_once()
     message = coordinator.display.show_popup.call_args.args[1]
@@ -410,9 +391,7 @@ def test_start_install_spawns_a_started_daemon_worker_thread(coordinator):
     on_progress = MagicMock()
     on_finished = MagicMock()
 
-    with patch(
-        "fishbowl_common.UpdateCoordinator.threading.Thread"
-    ) as mock_thread_cls:
+    with patch("fishbowl_common.UpdateCoordinator.threading.Thread") as mock_thread_cls:
         coordinator.coordinator.start_install(result, on_progress, on_finished)
 
     mock_thread_cls.assert_called_once_with(
@@ -425,9 +404,7 @@ def test_start_install_spawns_a_started_daemon_worker_thread(coordinator):
 
 @patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
 @patch("fishbowl_common.UpdateCoordinator.UpdateDownloader")
-def test_run_install_verifies_and_starts_the_downloaded_installer(
-    mock_downloader_cls, mock_installer_cls, coordinator
-):
+def test_run_install_verifies_and_starts_the_downloaded_installer(mock_downloader_cls, mock_installer_cls, coordinator):
     """
     Verifies that the worker fetches the published digest for the installer, hands
     the download that digest and the published size to verify against, and starts
@@ -452,9 +429,7 @@ def test_run_install_verifies_and_starts_the_downloaded_installer(
 
     # The digest is looked up for this asset by name, so a release publishing
     # several files still verifies the right one
-    downloader.fetch_expected_sha256.assert_called_once_with(
-        result.checksums_asset.download_url, _INSTALLER_NAME
-    )
+    downloader.fetch_expected_sha256.assert_called_once_with(result.checksums_asset.download_url, _INSTALLER_NAME)
 
     download_args = downloader.download.call_args.args
     assert download_args[0] == result.installer_asset.download_url
@@ -500,9 +475,7 @@ def test_run_install_marshals_download_progress_onto_the_gui_thread(
 
 @patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
 @patch("fishbowl_common.UpdateCoordinator.UpdateDownloader")
-def test_run_install_reports_failure_when_no_digest_is_published(
-    mock_downloader_cls, mock_installer_cls, coordinator
-):
+def test_run_install_reports_failure_when_no_digest_is_published(mock_downloader_cls, mock_installer_cls, coordinator):
     """
     Verifies that a checksums file listing no digest for this asset stops the flow
     before anything is downloaded, since an installer that cannot be verified must
@@ -528,9 +501,7 @@ def test_run_install_reports_failure_when_no_digest_is_published(
 
 @patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
 @patch("fishbowl_common.UpdateCoordinator.UpdateDownloader")
-def test_run_install_reports_failure_when_the_download_fails(
-    mock_downloader_cls, mock_installer_cls, coordinator
-):
+def test_run_install_reports_failure_when_the_download_fails(mock_downloader_cls, mock_installer_cls, coordinator):
     """
     Verifies that a download that failed or failed its verification (a None result)
     is never handed to the installer, and is reported so the window can fall back to
@@ -584,9 +555,7 @@ def test_run_install_reports_failure_when_the_installer_will_not_start(
 
 @patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
 @patch("fishbowl_common.UpdateCoordinator.UpdateDownloader")
-def test_run_install_carries_the_download_failure_reason(
-    mock_downloader_cls, _mock_installer_cls, coordinator
-):
+def test_run_install_carries_the_download_failure_reason(mock_downloader_cls, _mock_installer_cls, coordinator):
     """
     Verifies that why the download failed is copied off the downloader before the
     outcome crosses to the GUI thread, so an application whose finished callback

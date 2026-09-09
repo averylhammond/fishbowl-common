@@ -1,13 +1,12 @@
 import sqlite3
+from collections.abc import Callable
 from contextlib import closing
 from pathlib import Path
-from typing import Callable
 
 
 # SettingsRepository class to persist user-controlled settings (theme, font, etc.)
 # in a SQLite database so they survive between application restarts.
 class SettingsRepository:
-
     def __init__(
         self,
         db_path: Path,
@@ -51,11 +50,7 @@ class SettingsRepository:
             # closing() closes the connection on the way out; the connection's own
             # context manager only commits or rolls back, so both are needed
             with closing(sqlite3.connect(self.db_path)) as connection, connection:
-                connection.execute(
-                    "CREATE TABLE IF NOT EXISTS settings ("
-                    "key TEXT PRIMARY KEY, "
-                    "value TEXT)"
-                )
+                connection.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)")
         # mkdir raises OSError rather than sqlite3.Error when the data directory
         # cannot be created, so both are reported rather than escaping to the caller
         except (sqlite3.Error, OSError) as error:
@@ -78,7 +73,7 @@ class SettingsRepository:
             # context manager only commits or rolls back, so both are needed
             with closing(sqlite3.connect(self.db_path)) as connection, connection:
                 rows = connection.execute("SELECT key, value FROM settings").fetchall()
-                return {key: value for key, value in rows}
+                return dict(rows)
         except sqlite3.Error as error:
             self.report_error(
                 "Settings Error",

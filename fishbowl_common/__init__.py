@@ -1,3 +1,4 @@
+from fishbowl_common._version import __version__
 from fishbowl_common.ArgumentProvider import ArgumentProvider
 from fishbowl_common.PatchNotes import PatchNotes
 from fishbowl_common.SettingsRepository import SettingsRepository
@@ -21,11 +22,9 @@ from fishbowl_common.UpdateDownloader import (
     UpdateDownloader,
 )
 from fishbowl_common.UpdateInstaller import UpdateInstaller
-from fishbowl_common._version import __version__
 from fishbowl_common.version_utils import compare_versions, parse_version
 
 __all__ = [
-    "ArgumentProvider",
     "CHECK_ERROR_HTTP",
     "CHECK_ERROR_NETWORK",
     "CHECK_ERROR_RATE_LIMITED",
@@ -36,11 +35,12 @@ __all__ = [
     "DOWNLOAD_ERROR_NETWORK",
     "DOWNLOAD_ERROR_NO_DIGEST",
     "DOWNLOAD_ERROR_SIZE",
+    "ArgumentProvider",
     "PatchNotes",
     "ReleaseAsset",
     "SettingsRepository",
-    "UpdateChecker",
     "UpdateCheckResult",
+    "UpdateChecker",
     "UpdateCoordinator",
     "UpdateDisplay",
     "UpdateDownloader",

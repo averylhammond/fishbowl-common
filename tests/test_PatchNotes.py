@@ -82,9 +82,7 @@ def test_notes_since_returns_every_skipped_version_newest_first():
 
     notes = _reader().notes_since("2.4.0", "2.2.0")
 
-    assert notes == (
-        "## 2.4.0\n\n- Added the fourth thing\n\n## 2.3.0\n\n- Added the third thing"
-    )
+    assert notes == ("## 2.4.0\n\n- Added the fourth thing\n\n## 2.3.0\n\n- Added the third thing")
 
 
 def test_notes_since_orders_sections_by_version_not_file_order():

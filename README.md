@@ -136,9 +136,7 @@ if args.integration_test_mode:
 settings = SettingsRepository(db_path=Path("data") / "settings.db")
 settings.save_setting("theme", "Ocean")
 
-result = UpdateChecker(
-    current_version="1.2.3", repo="averylhammond/FishbowlInvoiceTool"
-).check_for_update()
+result = UpdateChecker(current_version="1.2.3", repo="averylhammond/FishbowlInvoiceTool").check_for_update()
 if result and result.update_available:
     ...
 ```
@@ -157,8 +155,8 @@ coordinator = UpdateCoordinator(
     asset_pattern="FishbowlInvoiceTool_Setup.exe",  # omit for the manual download only
 )
 
-coordinator.start()               # silent startup check
-coordinator.start(manual=True)    # Help -> Check for Updates; always reports an outcome
+coordinator.start()  # silent startup check
+coordinator.start(manual=True)  # Help -> Check for Updates; always reports an outcome
 ```
 
 Passing an `asset_pattern` is what turns on the in-app "Update and Restart" button. It

@@ -3,7 +3,6 @@ import argparse
 
 # ArgumentProvider class to provide script arguments to any module that needs them
 class ArgumentProvider:
-
     def __init__(self, description: str = "Fishbowl desktop application") -> None:
         """
         Initializes the ArgumentProvider object

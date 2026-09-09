@@ -24,7 +24,9 @@ def _reimport_without_tkinter(module_name: str):
 
     def _blocked_import(name, *args, **kwargs):
         if name == "tkinter" or name.startswith("tkinter."):
-            raise ImportError("No module named 'tkinter'")
+            # The message is reproduced verbatim from CPython's own ImportError, so a
+            # module catching it by text behaves as it would with tkinter truly absent.
+            raise ImportError("No module named 'tkinter'")  # noqa: TRY003
         return real_import(name, *args, **kwargs)
 
     cached = {
@@ -39,11 +41,7 @@ def _reimport_without_tkinter(module_name: str):
         with patch.object(builtins, "__import__", side_effect=_blocked_import):
             return importlib.import_module(module_name)
     finally:
-        for key in [
-            key
-            for key in sys.modules
-            if key == "tkinter" or key.startswith(("tkinter.", "fishbowl_common"))
-        ]:
+        for key in [key for key in sys.modules if key == "tkinter" or key.startswith(("tkinter.", "fishbowl_common"))]:
             del sys.modules[key]
         sys.modules.update(cached)
 

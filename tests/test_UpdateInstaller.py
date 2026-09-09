@@ -1,12 +1,13 @@
-import pytest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from fishbowl_common.UpdateInstaller import (
-    UpdateInstaller,
     RELAUNCH_ARG,
     SILENT_ARGS,
+    UpdateInstaller,
 )
 
 # Installer the tests launch, and where its log would be written. Nothing is
@@ -65,9 +66,7 @@ def test_is_supported_is_false_off_windows():
 
 
 @patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
-def test_launch_runs_the_installer_silently_and_asks_for_a_relaunch(
-    mock_popen, installer
-):
+def test_launch_runs_the_installer_silently_and_asks_for_a_relaunch(mock_popen, installer):
     """
     Verifies that the installer is invoked with the unattended switches and the
     relaunch parameter, which is what brings the application back after an upgrade
@@ -114,9 +113,7 @@ def test_launch_omits_the_log_switch_when_no_path_is_given(mock_popen, installer
 
     installer.launch(_INSTALLER)
 
-    assert not any(
-        argument.startswith("/LOG=") for argument in mock_popen.call_args.args[0]
-    )
+    assert not any(argument.startswith("/LOG=") for argument in mock_popen.call_args.args[0])
 
 
 @patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
@@ -146,9 +143,7 @@ def test_launch_detaches_the_installer_from_this_process(installer):
         installer (pytest.fixture): Provides the installer under test
     """
 
-    fake_subprocess = _fake_subprocess(
-        DETACHED_PROCESS=8, CREATE_NEW_PROCESS_GROUP=512
-    )
+    fake_subprocess = _fake_subprocess(DETACHED_PROCESS=8, CREATE_NEW_PROCESS_GROUP=512)
 
     with patch("fishbowl_common.UpdateInstaller.subprocess", fake_subprocess):
         installer.launch(_INSTALLER)
@@ -176,9 +171,7 @@ def test_launch_falls_back_to_no_flags_where_they_do_not_exist(installer):
 
 
 @patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
-def test_launch_returns_false_when_the_installer_cannot_be_started(
-    mock_popen, installer
-):
+def test_launch_returns_false_when_the_installer_cannot_be_started(mock_popen, installer):
     """
     Verifies that an installer that will not start is reported rather than raising,
     so the caller falls back to the manual download instead of exiting for an
@@ -216,9 +209,7 @@ def test_launch_lets_the_installer_force_close_the_application(mock_popen, insta
 
 
 @patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
-def test_launch_strips_the_pyinstaller_variables_from_the_environment(
-    mock_popen, installer
-):
+def test_launch_strips_the_pyinstaller_variables_from_the_environment(mock_popen, installer):
     """
     Verifies that the bootloader's variables are kept out of the environment the
     installer is started with. A frozen application hands its whole environment to a
@@ -278,9 +269,7 @@ def test_launch_passes_an_environment_even_with_nothing_to_strip(mock_popen, ins
         installer (pytest.fixture): Provides the installer under test
     """
 
-    with patch.dict(
-        "fishbowl_common.UpdateInstaller.os.environ", {"TEMP": r"C:\Temp"}, clear=True
-    ):
+    with patch.dict("fishbowl_common.UpdateInstaller.os.environ", {"TEMP": r"C:\Temp"}, clear=True):
         installer.launch(_INSTALLER)
 
     assert mock_popen.call_args.kwargs["env"] == {"TEMP": r"C:\Temp"}

@@ -1,20 +1,20 @@
 import json
 import urllib.error
 from dataclasses import FrozenInstanceError
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from fishbowl_common.UpdateChecker import (
-    ReleaseAsset,
-    UpdateChecker,
-    UpdateCheckResult,
     CHECK_ERROR_HTTP,
     CHECK_ERROR_NETWORK,
     CHECK_ERROR_RATE_LIMITED,
     CHECK_ERROR_RESPONSE,
     DEFAULT_CHECKSUMS_NAME,
     REQUEST_TIMEOUT_SECONDS,
+    ReleaseAsset,
+    UpdateChecker,
+    UpdateCheckResult,
 )
 
 # Repository used to construct the checker under test. Any "owner/name" value works;
@@ -131,13 +131,9 @@ def test_check_for_update_returns_result_when_newer_release_exists(mock_urlopen)
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
     """
 
-    mock_urlopen.return_value = _release_response(
-        "v3.2.0", "https://example.com/v3.2.0"
-    )
+    mock_urlopen.return_value = _release_response("v3.2.0", "https://example.com/v3.2.0")
 
-    result = UpdateChecker(
-        current_version="3.1.2", repo=_TEST_REPO
-    ).check_for_update()
+    result = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO).check_for_update()
 
     assert result.update_available is True
     assert result.latest_version == "3.2.0"
@@ -156,9 +152,7 @@ def test_check_for_update_no_update_when_versions_equal(mock_urlopen):
 
     mock_urlopen.return_value = _release_response("v3.1.2")
 
-    result = UpdateChecker(
-        current_version="3.1.2", repo=_TEST_REPO
-    ).check_for_update()
+    result = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO).check_for_update()
 
     assert result.update_available is False
     assert result.latest_version == "3.1.2"
@@ -176,9 +170,7 @@ def test_check_for_update_no_update_when_release_is_older(mock_urlopen):
 
     mock_urlopen.return_value = _release_response("v3.1.0")
 
-    result = UpdateChecker(
-        current_version="3.1.2", repo=_TEST_REPO
-    ).check_for_update()
+    result = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO).check_for_update()
 
     assert result.update_available is False
 
@@ -195,9 +187,7 @@ def test_check_for_update_normalizes_v_prefix_inconsistency(mock_urlopen):
 
     mock_urlopen.return_value = _release_response("v3.2.0")
 
-    result = UpdateChecker(
-        current_version="3.1.2", repo=_TEST_REPO
-    ).check_for_update()
+    result = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO).check_for_update()
 
     assert result.update_available is True
     assert result.latest_version == "3.2.0"
@@ -215,9 +205,7 @@ def test_check_for_update_compares_versions_semantically_not_lexically(mock_urlo
 
     mock_urlopen.return_value = _release_response("v3.10.0")
 
-    result = UpdateChecker(
-        current_version="3.9.0", repo=_TEST_REPO
-    ).check_for_update()
+    result = UpdateChecker(current_version="3.9.0", repo=_TEST_REPO).check_for_update()
 
     assert result.update_available is True
 
@@ -236,9 +224,7 @@ def test_check_for_update_handles_a_pre_release_tag(mock_urlopen):
 
     mock_urlopen.return_value = _release_response("v2.2.0-rc1")
 
-    result = UpdateChecker(
-        current_version="2.1.0", repo=_TEST_REPO
-    ).check_for_update()
+    result = UpdateChecker(current_version="2.1.0", repo=_TEST_REPO).check_for_update()
 
     assert result is not None
     assert result.update_available is True
@@ -257,9 +243,7 @@ def test_check_for_update_no_update_when_the_release_omits_a_segment(mock_urlope
 
     mock_urlopen.return_value = _release_response("v1.2")
 
-    result = UpdateChecker(
-        current_version="1.2.0", repo=_TEST_REPO
-    ).check_for_update()
+    result = UpdateChecker(current_version="1.2.0", repo=_TEST_REPO).check_for_update()
 
     assert result.update_available is False
 
@@ -300,10 +284,7 @@ def test_check_for_update_identifies_itself_to_the_github_api(mock_urlopen):
     UpdateChecker(current_version="3.1.2", repo=_TEST_REPO).check_for_update()
 
     # Request title-cases the header names it is handed, so compare on lowered keys
-    sent = {
-        name.lower(): value
-        for name, value in mock_urlopen.call_args.args[0].header_items()
-    }
+    sent = {name.lower(): value for name, value in mock_urlopen.call_args.args[0].header_items()}
 
     assert sent["user-agent"] == "fishbowl-common"
     assert sent["accept"] == "application/vnd.github+json"
@@ -381,9 +362,7 @@ def test_check_for_update_reports_a_rate_limit_carrying_only_retry_after(mock_ur
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
     """
 
-    mock_urlopen.side_effect = _http_error(
-        403, {"X-RateLimit-Remaining": "42", "Retry-After": "60"}
-    )
+    mock_urlopen.side_effect = _http_error(403, {"X-RateLimit-Remaining": "42", "Retry-After": "60"})
 
     checker = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO)
 
@@ -488,9 +467,7 @@ def test_check_for_update_surfaces_the_installer_and_checksums_assets(mock_urlop
         ],
     )
 
-    result = UpdateChecker(
-        current_version="3.1.2", repo=_TEST_REPO, asset_pattern="App_Setup.exe"
-    ).check_for_update()
+    result = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO, asset_pattern="App_Setup.exe").check_for_update()
 
     assert result.installer_asset.name == "App_Setup.exe"
     assert result.installer_asset.download_url == "https://example.com/App_Setup.exe"
@@ -509,13 +486,9 @@ def test_check_for_update_matches_the_installer_by_glob_pattern(mock_urlopen):
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
     """
 
-    mock_urlopen.return_value = _release_response(
-        "v3.2.0", assets=[_asset("App-3.2.0_Setup.exe")]
-    )
+    mock_urlopen.return_value = _release_response("v3.2.0", assets=[_asset("App-3.2.0_Setup.exe")])
 
-    result = UpdateChecker(
-        current_version="3.1.2", repo=_TEST_REPO, asset_pattern="*_Setup.exe"
-    ).check_for_update()
+    result = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO, asset_pattern="*_Setup.exe").check_for_update()
 
     assert result.installer_asset.name == "App-3.2.0_Setup.exe"
 
@@ -531,13 +504,9 @@ def test_check_for_update_reports_no_installer_when_none_matches(mock_urlopen):
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
     """
 
-    mock_urlopen.return_value = _release_response(
-        "v3.2.0", assets=[_asset("App.zip"), _asset(DEFAULT_CHECKSUMS_NAME)]
-    )
+    mock_urlopen.return_value = _release_response("v3.2.0", assets=[_asset("App.zip"), _asset(DEFAULT_CHECKSUMS_NAME)])
 
-    result = UpdateChecker(
-        current_version="3.1.2", repo=_TEST_REPO, asset_pattern="App_Setup.exe"
-    ).check_for_update()
+    result = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO, asset_pattern="App_Setup.exe").check_for_update()
 
     assert result.update_available is True
     assert result.installer_asset is None
@@ -556,9 +525,7 @@ def test_check_for_update_reports_no_installer_without_an_asset_pattern(mock_url
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
     """
 
-    mock_urlopen.return_value = _release_response(
-        "v3.2.0", assets=[_asset("App_Setup.exe")]
-    )
+    mock_urlopen.return_value = _release_response("v3.2.0", assets=[_asset("App_Setup.exe")])
 
     result = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO).check_for_update()
 
@@ -578,9 +545,7 @@ def test_check_for_update_reports_no_assets_when_the_release_lists_none(mock_url
 
     mock_urlopen.return_value = _release_response("v3.2.0")
 
-    result = UpdateChecker(
-        current_version="3.1.2", repo=_TEST_REPO, asset_pattern="App_Setup.exe"
-    ).check_for_update()
+    result = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO, asset_pattern="App_Setup.exe").check_for_update()
 
     assert result.installer_asset is None
     assert result.checksums_asset is None
@@ -597,13 +562,9 @@ def test_check_for_update_finds_the_checksums_asset_by_injected_name(mock_urlope
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
     """
 
-    mock_urlopen.return_value = _release_response(
-        "v3.2.0", assets=[_asset("checksums.txt")]
-    )
+    mock_urlopen.return_value = _release_response("v3.2.0", assets=[_asset("checksums.txt")])
 
-    result = UpdateChecker(
-        current_version="3.1.2", repo=_TEST_REPO, checksums_name="checksums.txt"
-    ).check_for_update()
+    result = UpdateChecker(current_version="3.1.2", repo=_TEST_REPO, checksums_name="checksums.txt").check_for_update()
 
     assert result.checksums_asset.name == "checksums.txt"
 
@@ -624,16 +585,10 @@ def test_results_carrying_equal_assets_are_equal():
     there would fall back to identity and make two otherwise-equal results unequal.
     """
 
-    installer = ReleaseAsset(
-        "App_Setup.exe", "https://example.com/App_Setup.exe", 4096
-    )
-    same_installer = ReleaseAsset(
-        "App_Setup.exe", "https://example.com/App_Setup.exe", 4096
-    )
+    installer = ReleaseAsset("App_Setup.exe", "https://example.com/App_Setup.exe", 4096)
+    same_installer = ReleaseAsset("App_Setup.exe", "https://example.com/App_Setup.exe", 4096)
 
-    assert _result(installer_asset=installer) == _result(
-        installer_asset=same_installer
-    )
+    assert _result(installer_asset=installer) == _result(installer_asset=same_installer)
 
 
 def test_results_differing_in_any_field_are_not_equal():

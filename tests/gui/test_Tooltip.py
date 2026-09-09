@@ -1,9 +1,10 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from fishbowl_common.gui.Tooltip import Tooltip
+import pytest
+
 from fishbowl_common.gui.color_theme import DARK, LIGHT
 from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
+from fishbowl_common.gui.Tooltip import Tooltip
 
 
 @pytest.fixture

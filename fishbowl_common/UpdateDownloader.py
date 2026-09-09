@@ -1,10 +1,11 @@
+import contextlib
 import hashlib
 import tempfile
 import urllib.error
 import urllib.request
+from collections.abc import Callable
 from http.client import HTTPResponse
 from pathlib import Path
-from typing import Callable
 
 from fishbowl_common.UpdateChecker import USER_AGENT
 
@@ -21,6 +22,10 @@ CHUNK_SIZE = 64 * 1024
 # Length of a SHA-256 digest in hexadecimal characters. A line of the checksums
 # file whose first field is not one of these is not a digest line.
 SHA256_HEX_LENGTH = 64
+
+# Fewest whitespace-separated fields a checksums line can carry and still be one:
+# the digest and the filename it belongs to. Anything shorter is a blank or a header.
+MIN_CHECKSUM_FIELDS = 2
 
 # Sent with both requests. Only the User-Agent, since these fetch a file rather
 # than the API: an Accept pinning a media type would constrain the redirect to the
@@ -46,7 +51,6 @@ DOWNLOAD_ERROR_DIGEST = "digest"
 # never raises: every failure - network, disk, a size or digest that does not match
 # - comes back as None, so a caller can fall back to the manual download flow.
 class UpdateDownloader:
-
     def __init__(self) -> None:
         """
         Initializes the UpdateDownloader. It takes nothing: every value it works
@@ -59,9 +63,7 @@ class UpdateDownloader:
         # call to fetch_expected_sha256() and download().
         self.last_error: str | None = None
 
-    def fetch_expected_sha256(
-        self, checksums_url: str, asset_name: str
-    ) -> str | None:
+    def fetch_expected_sha256(self, checksums_url: str, asset_name: str) -> str | None:
         """
         Reads the release's checksums file and returns the digest published for one
         asset.
@@ -85,9 +87,7 @@ class UpdateDownloader:
         try:
             request = urllib.request.Request(checksums_url, headers=REQUEST_HEADERS)
 
-            with urllib.request.urlopen(
-                request, timeout=DOWNLOAD_TIMEOUT_SECONDS
-            ) as response:
+            with urllib.request.urlopen(request, timeout=DOWNLOAD_TIMEOUT_SECONDS) as response:
                 contents = response.read().decode("utf-8", "replace")
         except urllib.error.HTTPError:
             # The host answered with a status instead of the file. Caught ahead of
@@ -106,7 +106,7 @@ class UpdateDownloader:
 
         for line in contents.splitlines():
             fields = line.split()
-            if len(fields) < 2:
+            if len(fields) < MIN_CHECKSUM_FIELDS:
                 continue
 
             digest = fields[0]
@@ -161,9 +161,7 @@ class UpdateDownloader:
         try:
             request = urllib.request.Request(url, headers=REQUEST_HEADERS)
 
-            with urllib.request.urlopen(
-                request, timeout=DOWNLOAD_TIMEOUT_SECONDS
-            ) as response:
+            with urllib.request.urlopen(request, timeout=DOWNLOAD_TIMEOUT_SECONDS) as response:
                 total = self._response_size(response, expected_size)
 
                 # Report the starting position so a caller can show an empty bar
@@ -171,7 +169,7 @@ class UpdateDownloader:
                 if progress is not None:
                     progress(0, total)
 
-                with open(destination, "wb") as downloaded_file:
+                with destination.open("wb") as downloaded_file:
                     while True:
                         chunk = response.read(CHUNK_SIZE)
                         if not chunk:
@@ -223,9 +221,7 @@ class UpdateDownloader:
 
         return Path(tempfile.mkdtemp(prefix="fishbowl-update-")) / asset_name
 
-    def _response_size(
-        self, response: HTTPResponse, expected_size: int | None
-    ) -> int:
+    def _response_size(self, response: HTTPResponse, expected_size: int | None) -> int:
         """
         Determines how many bytes the download is expected to be.
 
@@ -262,7 +258,6 @@ class UpdateDownloader:
         """
 
         self.last_error = reason
-        return None
 
     def _discard_and_fail(self, destination: Path, reason: str) -> None:
         """
@@ -289,8 +284,6 @@ class UpdateDownloader:
             destination: The file to delete; it need not exist.
         """
 
-        try:
+        # Failing to clean up must not mask the failure that led here
+        with contextlib.suppress(OSError):
             destination.unlink(missing_ok=True)
-        except OSError:
-            # Failing to clean up must not mask the failure that led here
-            pass

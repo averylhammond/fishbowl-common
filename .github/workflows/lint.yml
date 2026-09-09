@@ -1,0 +1,49 @@
+name: Lint Workflow
+
+# Run the linter and formatter check on pull requests to main
+on:
+  pull_request:
+    branches: [ main ]
+
+# Allow for the job to be ran manually from the GitHub Actions UI
+  workflow_dispatch:
+
+# Read-only access is all this job needs: it reads the tree and reports through
+# the check annotations that --output-format=github emits.
+permissions:
+  contents: read
+
+jobs:
+  lint:
+
+    # Give the job a name to link into the Github Rules UI
+    name: Lint CI Check
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout repo
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    # Set up Python environment
+    - name: Set up Python environment
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11.9"
+
+    # Deliberately not `pip install -e ".[dev,gui]"` like the other three workflows:
+    # linting needs neither pytest nor the package itself installed. The pin is still
+    # read out of the dev extra rather than written here, so it cannot drift from what
+    # a developer runs locally.
+    - name: Install ruff
+      run: pip install "$(grep -oE 'ruff==[0-9.]+' pyproject.toml)"
+
+    # Lint. --output-format=github turns each finding into an inline PR annotation.
+    - name: Run ruff check
+      run: ruff check --output-format=github .
+
+    # Formatting is a separate step so a formatting-only failure is obvious in the job log
+    # rather than buried among lint findings. Always runs, even when the check above fails.
+    - name: Run ruff format --check
+      if: always()
+      run: ruff format --check .

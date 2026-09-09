@@ -47,6 +47,10 @@ gui = []
 dev = [
     "pytest==8.4.1",
     "pytest-cov==7.0.0",
+    # The linter and formatter. Pinned to the version FishbowlInvoiceTool pins in its
+    # requirements/dev.txt: a ruff release can add rules or change the formatter's output,
+    # so an unpinned version would fail CI on a commit that was clean the day before.
+    "ruff==0.16.5",
 ]
 
 [tool.setuptools]
@@ -71,3 +75,77 @@ omit = [
     "fishbowl_common/gui/color_theme.py",
     "fishbowl_common/gui/font_settings.py",
 ]
+
+[tool.ruff]
+line-length = 120
+# Redundant with requires-python above, which ruff would infer the same target from. It is
+# stated anyway so this block stays diffable against the copies in FishbowlInvoiceTool and
+# FishbowlInventoryTool, where there is no [project] table to infer from.
+target-version = "py311"
+# No extend-exclude: everything ruff should not read (venv/, build/, dist/, *.egg-info/) is
+# already in .gitignore, which ruff honors. Unlike the two apps, this repo has neither an
+# untracked sibling clone nor a private submodule in the tree.
+
+[tool.ruff.format]
+# skip-magic-trailing-comma is deliberately left at its default of false. A trailing comma
+# is an authoring signal that a construct stays exploded, and honoring it keeps "add one
+# import" a one-line diff rather than a whole-line rewrite.
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "C4",  # flake8-comprehensions
+    "BLE", # flake8-blind-except
+    "ANN", # flake8-annotations
+    "ARG", # flake8-unused-arguments
+    "PTH", # flake8-use-pathlib
+    "TRY", # tryceratops
+    "PL",  # pylint
+    "N",   # pep8-naming
+    "RUF", # ruff-specific
+]
+ignore = [
+    # Documented by ruff as conflicting with its own formatter.
+    "W191",
+    "E111",
+    "E114",
+    "E117",
+    # Every module here is named after the class it holds (SettingsRepository.py), and
+    # tests/ mirrors that (test_SettingsRepository.py) per .claude/rules/tests.md. Renaming
+    # 14 modules and their tests is not in scope for adopting a linter, and consumers import
+    # from the two package roots rather than from a module, so the rename is not the public
+    # API change it looks like. Tracked in #39.
+    "N999",
+]
+# FishbowlInvoiceTool's block also ignores PLR0915 for its main display's build_widgets().
+# Deliberately not copied: no function here is over the 50-statement default, and a config
+# ignore with no site is invisible -- RUF100 reports an unused inline noqa, nothing reports
+# an unused entry in this list.
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    # Test parameters are deliberately unannotated -- the docstring's Args: entry carries
+    # the type instead. See .claude/rules/tests.md.
+    "ANN",
+    # An assertion's expected value is meant to be a literal spelled out at the assertion.
+    # Hoisting `assert len(widgets) == 18` to a named constant hides the number the test
+    # exists to pin.
+    "PLR2004",
+]
+
+[tool.ruff.lint.isort]
+# This is the package, so it is the first-party name. The two apps' copies of this block
+# invert that: there source is first party and fishbowl_common is third party, installed
+# from a pinned git tag.
+known-first-party = ["fishbowl_common"]
+
+[tool.ruff.lint.pylint]
+# CLAUDE.md requires every app-specific value arrive by constructor injection rather than
+# from a module-level default, which puts UpdateWindow.__init__ at 10 parameters by design.
+max-args = 10

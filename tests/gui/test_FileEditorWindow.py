@@ -1,10 +1,10 @@
 import tkinter as tk
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from fishbowl_common.gui.FileEditorWindow import FileEditorWindow
 from fishbowl_common.gui.color_theme import DARK
+from fishbowl_common.gui.FileEditorWindow import FileEditorWindow
 from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
 
 
@@ -65,7 +65,6 @@ def _build_window(
             side_effect=_distinct_widget,
         ) as text_cls,
     ):
-
         window = FileEditorWindow(
             parent=MagicMock(),
             title="Results Log",
@@ -174,7 +173,6 @@ def test_close_button_is_wired_to_destroy():
             side_effect=_distinct_widget,
         ),
     ):
-
         window = FileEditorWindow(
             parent=MagicMock(),
             title="Results Log",
@@ -187,9 +185,7 @@ def test_close_button_is_wired_to_destroy():
         )
 
         # Find the Close button's construction call and confirm its command is destroy
-        close_call = next(
-            c for c in mock_button.call_args_list if c.kwargs.get("text") == "Close"
-        )
+        close_call = next(c for c in mock_button.call_args_list if c.kwargs.get("text") == "Close")
         assert close_call.kwargs["command"] == window.destroy
 
 
