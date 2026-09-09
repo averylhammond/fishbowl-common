@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from fishbowl_common.gui.color_theme import DARK
 from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
-from fishbowl_common.gui.ThemedSubwindow import ThemedSubwindow
+from fishbowl_common.gui.themed_subwindow import ThemedSubwindow
 
 
 def _build_subwindow():

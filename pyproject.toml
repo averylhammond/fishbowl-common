@@ -116,12 +116,6 @@ ignore = [
     "E111",
     "E114",
     "E117",
-    # Every module here is named after the class it holds (SettingsRepository.py), and
-    # tests/ mirrors that (test_SettingsRepository.py) per .claude/rules/tests.md. Renaming
-    # 14 modules and their tests is not in scope for adopting a linter, and consumers import
-    # from the two package roots rather than from a module, so the rename is not the public
-    # API change it looks like. Tracked in #39.
-    "N999",
 ]
 # FishbowlInvoiceTool's block also ignores PLR0915 for its main display's build_widgets().
 # Deliberately not copied: no function here is over the 50-statement default, and a config

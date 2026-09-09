@@ -46,9 +46,9 @@ does the snapshotting; `MessageWindow`, `AboutWindow`, `FileEditorWindow`, `Patc
 
 Each `_build_window()` helper opens a `with` stack patching `tk.Toplevel.__init__`, the window's
 own `title`/`configure`/`_center_over_parent`, and every widget class at its point of use
-(`patch("fishbowl_common.gui.UpdateWindow.tk.Button", side_effect=_distinct_widget)`), where
+(`patch("fishbowl_common.gui.update_window.tk.Button", side_effect=_distinct_widget)`), where
 `_distinct_widget` returns a fresh `MagicMock()` per widget so each is independently assertable.
 That is what lets the whole suite run on `ubuntu-latest` with no display and no `python3-tk`.
 
-`tests/gui/test_UpdateWindow.py` is the richest fixture — mirror it rather than inventing a new
+`tests/gui/test_update_window.py` is the richest fixture — mirror it rather than inventing a new
 pattern. The general test conventions live in `.claude/rules/tests.md`.

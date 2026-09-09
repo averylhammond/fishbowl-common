@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import scrolledtext
 
 from fishbowl_common.gui.color_theme import Theme
-from fishbowl_common.gui.ThemedSubwindow import ThemedSubwindow
+from fishbowl_common.gui.themed_subwindow import ThemedSubwindow
 
 # Size of the notes box, in character cells. Patch notes run longer than the
 # handful of lines an AboutWindow shows, so the box is sized rather than left at

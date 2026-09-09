@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from fishbowl_common.SettingsRepository import SettingsRepository
+from fishbowl_common.settings_repository import SettingsRepository
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def settings_repo():
             (`db_path`), and the mocked error reporter (`report_error`).
     """
 
-    with patch("fishbowl_common.SettingsRepository.sqlite3.connect") as mock_connect:
+    with patch("fishbowl_common.settings_repository.sqlite3.connect") as mock_connect:
         # The object bound by `with closing(sqlite3.connect(...)) as connection`.
         # closing() yields the object it wraps, so this is what connect returned.
         mock_connection = mock_connect.return_value

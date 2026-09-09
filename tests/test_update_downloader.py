@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from fishbowl_common.UpdateDownloader import (
+from fishbowl_common.update_downloader import (
     CHUNK_SIZE,
     DOWNLOAD_ERROR_DIGEST,
     DOWNLOAD_ERROR_HTTP,
@@ -131,7 +131,7 @@ def _text_response(text: str):
     return mock_context
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_fetch_expected_sha256_returns_the_digest_published_for_the_asset(mock_urlopen, downloader):
     """
     Verifies that the digest is read from the line naming this asset, not merely the
@@ -153,7 +153,7 @@ def test_fetch_expected_sha256_returns_the_digest_published_for_the_asset(mock_u
     assert mock_urlopen.call_args.kwargs == {"timeout": DOWNLOAD_TIMEOUT_SECONDS}
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_fetch_expected_sha256_identifies_itself(mock_urlopen, downloader):
     """
     Verifies that the checksums request carries a User-Agent naming this package.
@@ -172,7 +172,7 @@ def test_fetch_expected_sha256_identifies_itself(mock_urlopen, downloader):
     assert _sent_headers(mock_urlopen)["user-agent"] == "fishbowl-common"
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_download_identifies_itself(mock_urlopen, downloader):
     """
     Verifies that the installer download carries the same User-Agent as the check
@@ -191,7 +191,7 @@ def test_download_identifies_itself(mock_urlopen, downloader):
     assert _sent_headers(mock_urlopen)["user-agent"] == "fishbowl-common"
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_fetch_expected_sha256_accepts_the_binary_mode_marker(mock_urlopen, downloader):
     """
     Verifies that the "*" a binary-mode sha256sum entry carries in front of the
@@ -208,7 +208,7 @@ def test_fetch_expected_sha256_accepts_the_binary_mode_marker(mock_urlopen, down
     assert downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME) == _PAYLOAD_SHA256
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_fetch_expected_sha256_lowercases_the_published_digest(mock_urlopen, downloader):
     """
     Verifies that an uppercase digest is normalized, since the comparison it feeds
@@ -224,7 +224,7 @@ def test_fetch_expected_sha256_lowercases_the_published_digest(mock_urlopen, dow
     assert downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME) == _PAYLOAD_SHA256
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_fetch_expected_sha256_skips_lines_that_are_not_digest_entries(mock_urlopen, downloader):
     """
     Verifies that a blank line, a comment, or an entry whose first field is not a
@@ -242,7 +242,7 @@ def test_fetch_expected_sha256_skips_lines_that_are_not_digest_entries(mock_urlo
     assert downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME) == _PAYLOAD_SHA256
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_fetch_expected_sha256_returns_none_when_the_asset_is_not_listed(mock_urlopen, downloader):
     """
     Verifies that a checksums file listing nothing for this asset yields None, which
@@ -259,7 +259,7 @@ def test_fetch_expected_sha256_returns_none_when_the_asset_is_not_listed(mock_ur
     assert downloader.downloader.last_error == DOWNLOAD_ERROR_NO_DIGEST
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_fetch_expected_sha256_returns_none_on_network_error(mock_urlopen, downloader):
     """
     Verifies that a network failure is swallowed and reported as None rather than
@@ -276,7 +276,7 @@ def test_fetch_expected_sha256_returns_none_on_network_error(mock_urlopen, downl
     assert downloader.downloader.last_error == DOWNLOAD_ERROR_NETWORK
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_fetch_expected_sha256_separates_a_refusal_from_being_offline(mock_urlopen, downloader):
     """
     Verifies that a host answering with a status - a proxy blocking the transfer,
@@ -295,7 +295,7 @@ def test_fetch_expected_sha256_separates_a_refusal_from_being_offline(mock_urlop
     assert downloader.downloader.last_error == DOWNLOAD_ERROR_HTTP
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_fetch_expected_sha256_reports_an_unreadable_response(mock_urlopen, downloader):
     """
     Verifies that a socket error raised outside URLError is reported as an I/O
@@ -312,7 +312,7 @@ def test_fetch_expected_sha256_reports_an_unreadable_response(mock_urlopen, down
     assert downloader.downloader.last_error == DOWNLOAD_ERROR_IO
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_fetch_expected_sha256_clears_the_error_once_a_fetch_succeeds(mock_urlopen, downloader):
     """
     Verifies that a successful fetch leaves no error behind, so the coordinator -
@@ -334,7 +334,7 @@ def test_fetch_expected_sha256_clears_the_error_once_a_fetch_succeeds(mock_urlop
     assert downloader.downloader.last_error is None
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_download_writes_the_asset_and_returns_it_when_verified(mock_urlopen, downloader):
     """
     Verifies that a download matching its published size and digest is written to
@@ -367,7 +367,7 @@ def test_download_writes_the_asset_and_returns_it_when_verified(mock_urlopen, do
     downloader.destination.unlink.assert_not_called()
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_download_reads_the_body_in_chunks(mock_urlopen, downloader):
     """
     Verifies that the response is read a chunk at a time, since a single read() of
@@ -388,7 +388,7 @@ def test_download_reads_the_body_in_chunks(mock_urlopen, downloader):
     assert read.call_args_list[0].args == (CHUNK_SIZE,)
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_download_reports_progress_as_the_transfer_advances(mock_urlopen, downloader):
     """
     Verifies that progress is reported once before the first chunk and once after
@@ -417,7 +417,7 @@ def test_download_reports_progress_as_the_transfer_advances(mock_urlopen, downlo
     ]
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_download_falls_back_to_the_published_size_on_an_unreadable_header(mock_urlopen, downloader):
     """
     Verifies that a Content-Length that is not a number falls back to the published
@@ -443,7 +443,7 @@ def test_download_falls_back_to_the_published_size_on_an_unreadable_header(mock_
     assert progress.call_args_list[0].args == (0, 15)
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_download_falls_back_to_the_published_size_for_progress(mock_urlopen, downloader):
     """
     Verifies that a response reporting no Content-Length still yields a total to
@@ -472,7 +472,7 @@ def test_download_falls_back_to_the_published_size_for_progress(mock_urlopen, do
     ]
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_download_reports_a_zero_total_when_no_size_is_known(mock_urlopen, downloader):
     """
     Verifies that a transfer whose size neither the response nor the release
@@ -496,7 +496,7 @@ def test_download_reports_a_zero_total_when_no_size_is_known(mock_urlopen, downl
     ]
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_download_discards_and_returns_none_on_a_digest_mismatch(mock_urlopen, downloader):
     """
     Verifies that a file hashing to anything other than the published digest is
@@ -518,7 +518,7 @@ def test_download_discards_and_returns_none_on_a_digest_mismatch(mock_urlopen, d
     downloader.destination.unlink.assert_called_once_with(missing_ok=True)
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_download_discards_and_returns_none_on_a_size_mismatch(mock_urlopen, downloader):
     """
     Verifies that a transfer that ended at the wrong length is deleted and reported
@@ -538,7 +538,7 @@ def test_download_discards_and_returns_none_on_a_size_mismatch(mock_urlopen, dow
     downloader.destination.unlink.assert_called_once_with(missing_ok=True)
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_download_discards_and_returns_none_when_the_connection_drops(mock_urlopen, downloader):
     """
     Verifies that a connection failing part-way through leaves no partial file
@@ -563,7 +563,7 @@ def test_download_discards_and_returns_none_when_the_connection_drops(mock_urlop
     downloader.destination.unlink.assert_called_once_with(missing_ok=True)
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_download_discards_and_reports_a_refusal_as_an_http_failure(mock_urlopen, downloader):
     """
     Verifies that a host refusing the transfer outright is discarded like any other
@@ -584,7 +584,7 @@ def test_download_discards_and_reports_a_refusal_as_an_http_failure(mock_urlopen
     downloader.destination.unlink.assert_called_once_with(missing_ok=True)
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_download_clears_the_error_once_a_download_succeeds(mock_urlopen, downloader):
     """
     Verifies that a verified download leaves no error behind, so a reused downloader
@@ -605,7 +605,7 @@ def test_download_clears_the_error_once_a_download_succeeds(mock_urlopen, downlo
     assert downloader.downloader.last_error is None
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_download_returns_none_when_the_file_cannot_be_written(mock_urlopen, downloader):
     """
     Verifies that a disk failure is reported as a failure rather than raising, so a
@@ -623,7 +623,7 @@ def test_download_returns_none_when_the_file_cannot_be_written(mock_urlopen, dow
     assert downloader.downloader.last_error == DOWNLOAD_ERROR_IO
 
 
-@patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
+@patch("fishbowl_common.update_downloader.urllib.request.urlopen")
 def test_download_survives_a_cleanup_that_itself_fails(mock_urlopen, downloader):
     """
     Verifies that a delete which cannot be performed does not mask the failure that
@@ -640,7 +640,7 @@ def test_download_survives_a_cleanup_that_itself_fails(mock_urlopen, downloader)
     assert downloader.downloader.download(_ASSET_URL, downloader.destination, "b" * 64) is None
 
 
-@patch("fishbowl_common.UpdateDownloader.tempfile.mkdtemp")
+@patch("fishbowl_common.update_downloader.tempfile.mkdtemp")
 def test_default_destination_names_the_asset_inside_a_fresh_temp_directory(mock_mkdtemp, downloader):
     """
     Verifies that the download lands under its own temporary directory, keeping the

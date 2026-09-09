@@ -1,7 +1,7 @@
 import tkinter as tk
 
 from fishbowl_common.gui.color_theme import Theme
-from fishbowl_common.gui.ThemedSubwindow import ThemedSubwindow
+from fishbowl_common.gui.themed_subwindow import ThemedSubwindow
 
 
 # AboutWindow class to show the user which version of the application they are

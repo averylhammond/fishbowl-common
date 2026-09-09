@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from fishbowl_common.ArgumentProvider import ArgumentProvider
+from fishbowl_common.argument_provider import ArgumentProvider
 
 
 @patch("sys.argv", ["main.py"])

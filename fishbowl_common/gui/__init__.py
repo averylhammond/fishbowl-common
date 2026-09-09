@@ -3,7 +3,7 @@
 # package (which stays tkinter-free) so a consumer running headless never loads
 # tkinter; see the [gui] extra in pyproject.toml.
 
-from fishbowl_common.gui.AboutWindow import AboutWindow
+from fishbowl_common.gui.about_window import AboutWindow
 from fishbowl_common.gui.color_theme import (
     ALL_THEMES,
     DARK,
@@ -17,7 +17,7 @@ from fishbowl_common.gui.color_theme import (
     THEME_BY_NAME,
     Theme,
 )
-from fishbowl_common.gui.FileEditorWindow import FileEditorWindow
+from fishbowl_common.gui.file_editor_window import FileEditorWindow
 from fishbowl_common.gui.font_settings import (
     DEFAULT_FONT_FAMILY,
     DEFAULT_FONT_SIZE,
@@ -25,11 +25,11 @@ from fishbowl_common.gui.font_settings import (
     FONT_SIZES,
     MONOSPACE_FONT_FAMILY,
 )
-from fishbowl_common.gui.MessageWindow import MessageWindow
-from fishbowl_common.gui.PatchNotesWindow import PatchNotesWindow
-from fishbowl_common.gui.ThemedSubwindow import ThemedSubwindow
-from fishbowl_common.gui.Tooltip import Tooltip
-from fishbowl_common.gui.UpdateWindow import UpdateWindow
+from fishbowl_common.gui.message_window import MessageWindow
+from fishbowl_common.gui.patch_notes_window import PatchNotesWindow
+from fishbowl_common.gui.themed_subwindow import ThemedSubwindow
+from fishbowl_common.gui.tooltip import Tooltip
+from fishbowl_common.gui.update_window import UpdateWindow
 
 __all__ = [
     "ALL_THEMES",

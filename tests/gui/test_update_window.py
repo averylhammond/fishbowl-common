@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from fishbowl_common.gui.color_theme import DARK
 from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
-from fishbowl_common.gui.UpdateWindow import (
+from fishbowl_common.gui.update_window import (
     CLOSE_DELAY_MS,
     INSTALL_CLOSE_DELAY_MS,
     PROGRESS_BAR_HEIGHT,
@@ -60,9 +60,9 @@ def _build_window(
         patch.object(UpdateWindow, "title"),
         patch.object(UpdateWindow, "configure"),
         patch.object(UpdateWindow, "_center_over_parent"),
-        patch("fishbowl_common.gui.UpdateWindow.tk.Label", side_effect=_distinct_widget) as label_cls,
-        patch("fishbowl_common.gui.UpdateWindow.tk.Button", side_effect=_distinct_widget) as button_cls,
-        patch("fishbowl_common.gui.UpdateWindow.tk.Canvas", side_effect=_distinct_widget) as canvas_cls,
+        patch("fishbowl_common.gui.update_window.tk.Label", side_effect=_distinct_widget) as label_cls,
+        patch("fishbowl_common.gui.update_window.tk.Button", side_effect=_distinct_widget) as button_cls,
+        patch("fishbowl_common.gui.update_window.tk.Canvas", side_effect=_distinct_widget) as canvas_cls,
     ):
         window = UpdateWindow(
             parent=MagicMock(),
@@ -174,7 +174,7 @@ def test_open_release_page_opens_url_in_browser():
     # window has none of; the scheduling itself is asserted in a dedicated test
     built.window.after = MagicMock()
 
-    with patch("fishbowl_common.gui.UpdateWindow.webbrowser.open") as mock_open:
+    with patch("fishbowl_common.gui.update_window.webbrowser.open") as mock_open:
         built.window._open_release_page()
 
     mock_open.assert_called_once_with("https://example.com/release")
@@ -189,7 +189,7 @@ def test_open_release_page_schedules_app_close_after_delay():
     built = _build_window()
     built.window.after = MagicMock()
 
-    with patch("fishbowl_common.gui.UpdateWindow.webbrowser.open"):
+    with patch("fishbowl_common.gui.update_window.webbrowser.open"):
         built.window._open_release_page()
 
     built.window.after.assert_called_once_with(CLOSE_DELAY_MS, built.close_app_callback)
@@ -204,7 +204,7 @@ def test_open_release_page_ignores_repeat_clicks():
     built = _build_window()
     built.window.after = MagicMock()
 
-    with patch("fishbowl_common.gui.UpdateWindow.webbrowser.open") as mock_open:
+    with patch("fishbowl_common.gui.update_window.webbrowser.open") as mock_open:
         built.window._open_release_page()
         built.window._open_release_page()
 
@@ -222,7 +222,7 @@ def test_open_release_page_disables_button_and_updates_label():
     built = _build_window()
     built.window.after = MagicMock()
 
-    with patch("fishbowl_common.gui.UpdateWindow.webbrowser.open"):
+    with patch("fishbowl_common.gui.update_window.webbrowser.open"):
         built.window._open_release_page()
 
     built.window.info_label.config.assert_called_once_with(text="Closing to install update…")
@@ -333,7 +333,7 @@ def test_update_and_restart_blocks_the_manual_route_once_it_is_underway():
     built.window.after = MagicMock()
 
     built.window._update_and_restart()
-    with patch("fishbowl_common.gui.UpdateWindow.webbrowser.open") as mock_open:
+    with patch("fishbowl_common.gui.update_window.webbrowser.open") as mock_open:
         built.window._open_release_page()
 
     mock_open.assert_not_called()
@@ -414,7 +414,7 @@ def test_on_install_finished_falls_back_to_the_release_page_on_failure():
     built = _build_window(release_url="https://example.com/release", start_install_callback=MagicMock())
     built.window.after = MagicMock()
 
-    with patch("fishbowl_common.gui.UpdateWindow.webbrowser.open") as mock_open:
+    with patch("fishbowl_common.gui.update_window.webbrowser.open") as mock_open:
         built.window._on_install_finished(False)
 
     mock_open.assert_called_once_with("https://example.com/release")
@@ -433,7 +433,7 @@ def test_a_failed_download_still_reaches_the_release_page_after_a_real_click():
     built.window.after = MagicMock()
 
     built.window._update_and_restart()
-    with patch("fishbowl_common.gui.UpdateWindow.webbrowser.open") as mock_open:
+    with patch("fishbowl_common.gui.update_window.webbrowser.open") as mock_open:
         built.window._on_install_finished(False)
 
     mock_open.assert_called_once()

@@ -2,7 +2,7 @@ import tkinter as tk
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from fishbowl_common.gui.AboutWindow import AboutWindow
+from fishbowl_common.gui.about_window import AboutWindow
 from fishbowl_common.gui.color_theme import DARK
 from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
 
@@ -40,8 +40,8 @@ def _build_window(app_name="Test App", version="1.0"):
         patch.object(AboutWindow, "title"),
         patch.object(AboutWindow, "configure"),
         patch.object(AboutWindow, "_center_over_parent"),
-        patch("fishbowl_common.gui.AboutWindow.tk.Label", side_effect=_distinct_widget) as label_cls,
-        patch("fishbowl_common.gui.AboutWindow.tk.Button", side_effect=_distinct_widget) as button_cls,
+        patch("fishbowl_common.gui.about_window.tk.Label", side_effect=_distinct_widget) as label_cls,
+        patch("fishbowl_common.gui.about_window.tk.Button", side_effect=_distinct_widget) as button_cls,
     ):
         window = AboutWindow(
             parent=MagicMock(),

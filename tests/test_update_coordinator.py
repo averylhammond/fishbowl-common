@@ -4,13 +4,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from fishbowl_common.UpdateChecker import (
+from fishbowl_common.update_checker import (
     CHECK_ERROR_HTTP,
     CHECK_ERROR_NETWORK,
     CHECK_ERROR_RATE_LIMITED,
 )
-from fishbowl_common.UpdateCoordinator import UpdateCoordinator, UpdateDisplay
-from fishbowl_common.UpdateDownloader import DOWNLOAD_ERROR_HTTP
+from fishbowl_common.update_coordinator import UpdateCoordinator, UpdateDisplay
+from fishbowl_common.update_downloader import DOWNLOAD_ERROR_HTTP
 
 # Values injected into the coordinator under test. The version is only ever compared
 # by UpdateChecker (which is mocked here) and echoed back in the up-to-date message,
@@ -100,7 +100,7 @@ def test_start_spawns_a_started_daemon_worker_thread(coordinator):
         coordinator (pytest.fixture): Provides the coordinator and its mock display
     """
 
-    with patch("fishbowl_common.UpdateCoordinator.threading.Thread") as mock_thread_cls:
+    with patch("fishbowl_common.update_coordinator.threading.Thread") as mock_thread_cls:
         coordinator.coordinator.start()
 
     mock_thread_cls.assert_called_once_with(target=coordinator.coordinator._run_check, args=(False,), daemon=True)
@@ -116,7 +116,7 @@ def test_start_passes_the_manual_flag_to_the_worker(coordinator):
         coordinator (pytest.fixture): Provides the coordinator and its mock display
     """
 
-    with patch("fishbowl_common.UpdateCoordinator.threading.Thread") as mock_thread_cls:
+    with patch("fishbowl_common.update_coordinator.threading.Thread") as mock_thread_cls:
         coordinator.coordinator.start(manual=True)
 
     mock_thread_cls.assert_called_once_with(target=coordinator.coordinator._run_check, args=(True,), daemon=True)
@@ -133,7 +133,7 @@ def test_run_check_schedules_the_result_on_the_gui_thread(coordinator):
         coordinator (pytest.fixture): Provides the coordinator and its mock display
     """
 
-    with patch("fishbowl_common.UpdateCoordinator.UpdateChecker") as mock_checker_cls:
+    with patch("fishbowl_common.update_coordinator.UpdateChecker") as mock_checker_cls:
         mock_result = mock_checker_cls.return_value.check_for_update.return_value
         coordinator.coordinator._run_check(manual=True)
 
@@ -155,7 +155,7 @@ def test_run_check_schedules_the_result_on_the_gui_thread(coordinator):
     coordinator.display.show_update_available.assert_not_called()
 
 
-@patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
+@patch("fishbowl_common.update_coordinator.UpdateInstaller")
 def test_handle_result_shows_the_update_window_when_newer(mock_installer_cls, coordinator):
     """
     Verifies that a strictly newer release opens the update window on a startup
@@ -176,7 +176,7 @@ def test_handle_result_shows_the_update_window_when_newer(mock_installer_cls, co
     coordinator.display.show_popup.assert_not_called()
 
 
-@patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
+@patch("fishbowl_common.update_coordinator.UpdateInstaller")
 def test_handle_result_shows_the_update_window_when_newer_on_a_manual_check(mock_installer_cls, coordinator):
     """
     Verifies that a manual check announces a newer release the same way a startup
@@ -197,7 +197,7 @@ def test_handle_result_shows_the_update_window_when_newer_on_a_manual_check(mock
     coordinator.display.show_popup.assert_not_called()
 
 
-@patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
+@patch("fishbowl_common.update_coordinator.UpdateInstaller")
 def test_handle_result_offers_the_install_when_the_release_can_be_installed(mock_installer_cls, coordinator):
     """
     Verifies that a release publishing both assets, on a platform whose installer it
@@ -228,7 +228,7 @@ def test_handle_result_offers_the_install_when_the_release_can_be_installed(mock
         (True, True, False),
     ],
 )
-@patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
+@patch("fishbowl_common.update_coordinator.UpdateInstaller")
 def test_handle_result_withholds_the_install_when_it_cannot_be_offered(
     mock_installer_cls, coordinator, installer, checksums, supported
 ):
@@ -391,7 +391,7 @@ def test_start_install_spawns_a_started_daemon_worker_thread(coordinator):
     on_progress = MagicMock()
     on_finished = MagicMock()
 
-    with patch("fishbowl_common.UpdateCoordinator.threading.Thread") as mock_thread_cls:
+    with patch("fishbowl_common.update_coordinator.threading.Thread") as mock_thread_cls:
         coordinator.coordinator.start_install(result, on_progress, on_finished)
 
     mock_thread_cls.assert_called_once_with(
@@ -402,8 +402,8 @@ def test_start_install_spawns_a_started_daemon_worker_thread(coordinator):
     mock_thread_cls.return_value.start.assert_called_once_with()
 
 
-@patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
-@patch("fishbowl_common.UpdateCoordinator.UpdateDownloader")
+@patch("fishbowl_common.update_coordinator.UpdateInstaller")
+@patch("fishbowl_common.update_coordinator.UpdateDownloader")
 def test_run_install_verifies_and_starts_the_downloaded_installer(mock_downloader_cls, mock_installer_cls, coordinator):
     """
     Verifies that the worker fetches the published digest for the installer, hands
@@ -441,8 +441,8 @@ def test_run_install_verifies_and_starts_the_downloaded_installer(mock_downloade
     coordinator.display.after.assert_called_once_with(0, on_finished, True)
 
 
-@patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
-@patch("fishbowl_common.UpdateCoordinator.UpdateDownloader")
+@patch("fishbowl_common.update_coordinator.UpdateInstaller")
+@patch("fishbowl_common.update_coordinator.UpdateDownloader")
 def test_run_install_marshals_download_progress_onto_the_gui_thread(
     mock_downloader_cls, mock_installer_cls, coordinator
 ):
@@ -473,8 +473,8 @@ def test_run_install_marshals_download_progress_onto_the_gui_thread(
     coordinator.display.after.assert_any_call(0, on_progress, 512, 2048)
 
 
-@patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
-@patch("fishbowl_common.UpdateCoordinator.UpdateDownloader")
+@patch("fishbowl_common.update_coordinator.UpdateInstaller")
+@patch("fishbowl_common.update_coordinator.UpdateDownloader")
 def test_run_install_reports_failure_when_no_digest_is_published(mock_downloader_cls, mock_installer_cls, coordinator):
     """
     Verifies that a checksums file listing no digest for this asset stops the flow
@@ -499,8 +499,8 @@ def test_run_install_reports_failure_when_no_digest_is_published(mock_downloader
     coordinator.display.after.assert_called_once_with(0, on_finished, False)
 
 
-@patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
-@patch("fishbowl_common.UpdateCoordinator.UpdateDownloader")
+@patch("fishbowl_common.update_coordinator.UpdateInstaller")
+@patch("fishbowl_common.update_coordinator.UpdateDownloader")
 def test_run_install_reports_failure_when_the_download_fails(mock_downloader_cls, mock_installer_cls, coordinator):
     """
     Verifies that a download that failed or failed its verification (a None result)
@@ -525,8 +525,8 @@ def test_run_install_reports_failure_when_the_download_fails(mock_downloader_cls
     coordinator.display.after.assert_called_once_with(0, on_finished, False)
 
 
-@patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
-@patch("fishbowl_common.UpdateCoordinator.UpdateDownloader")
+@patch("fishbowl_common.update_coordinator.UpdateInstaller")
+@patch("fishbowl_common.update_coordinator.UpdateDownloader")
 def test_run_install_reports_failure_when_the_installer_will_not_start(
     mock_downloader_cls, mock_installer_cls, coordinator
 ):
@@ -553,8 +553,8 @@ def test_run_install_reports_failure_when_the_installer_will_not_start(
     coordinator.display.after.assert_called_once_with(0, on_finished, False)
 
 
-@patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
-@patch("fishbowl_common.UpdateCoordinator.UpdateDownloader")
+@patch("fishbowl_common.update_coordinator.UpdateInstaller")
+@patch("fishbowl_common.update_coordinator.UpdateDownloader")
 def test_run_install_carries_the_download_failure_reason(mock_downloader_cls, _mock_installer_cls, coordinator):
     """
     Verifies that why the download failed is copied off the downloader before the
@@ -578,8 +578,8 @@ def test_run_install_carries_the_download_failure_reason(mock_downloader_cls, _m
     assert coordinator.coordinator.last_download_error == DOWNLOAD_ERROR_HTTP
 
 
-@patch("fishbowl_common.UpdateCoordinator.UpdateInstaller")
-@patch("fishbowl_common.UpdateCoordinator.UpdateDownloader")
+@patch("fishbowl_common.update_coordinator.UpdateInstaller")
+@patch("fishbowl_common.update_coordinator.UpdateDownloader")
 def test_run_install_carries_no_reason_when_the_download_succeeded(
     mock_downloader_cls, mock_installer_cls, coordinator
 ):

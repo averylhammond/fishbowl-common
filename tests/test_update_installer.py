@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from fishbowl_common.UpdateInstaller import (
+from fishbowl_common.update_installer import (
     RELAUNCH_ARG,
     SILENT_ARGS,
     UpdateInstaller,
@@ -51,7 +51,7 @@ def test_is_supported_is_true_on_windows():
     reported as able to install an update in place.
     """
 
-    with patch("fishbowl_common.UpdateInstaller.sys.platform", "win32"):
+    with patch("fishbowl_common.update_installer.sys.platform", "win32"):
         assert UpdateInstaller.is_supported() is True
 
 
@@ -61,11 +61,11 @@ def test_is_supported_is_false_off_windows():
     offering the manual download rather than trying to run a Windows executable.
     """
 
-    with patch("fishbowl_common.UpdateInstaller.sys.platform", "linux"):
+    with patch("fishbowl_common.update_installer.sys.platform", "linux"):
         assert UpdateInstaller.is_supported() is False
 
 
-@patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
+@patch("fishbowl_common.update_installer.subprocess.Popen")
 def test_launch_runs_the_installer_silently_and_asks_for_a_relaunch(mock_popen, installer):
     """
     Verifies that the installer is invoked with the unattended switches and the
@@ -84,7 +84,7 @@ def test_launch_runs_the_installer_silently_and_asks_for_a_relaunch(mock_popen, 
     assert command[1:] == [*SILENT_ARGS, RELAUNCH_ARG]
 
 
-@patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
+@patch("fishbowl_common.update_installer.subprocess.Popen")
 def test_launch_passes_a_log_path_when_one_is_given(mock_popen, installer):
     """
     Verifies that a log path is handed to the installer as its /LOG switch, so a
@@ -100,7 +100,7 @@ def test_launch_passes_a_log_path_when_one_is_given(mock_popen, installer):
     assert mock_popen.call_args.args[0][-1] == f"/LOG={_LOG_PATH}"
 
 
-@patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
+@patch("fishbowl_common.update_installer.subprocess.Popen")
 def test_launch_omits_the_log_switch_when_no_path_is_given(mock_popen, installer):
     """
     Verifies that no /LOG switch is passed when the caller wants no log, rather than
@@ -116,7 +116,7 @@ def test_launch_omits_the_log_switch_when_no_path_is_given(mock_popen, installer
     assert not any(argument.startswith("/LOG=") for argument in mock_popen.call_args.args[0])
 
 
-@patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
+@patch("fishbowl_common.update_installer.subprocess.Popen")
 def test_launch_does_not_wait_for_the_installer(mock_popen, installer):
     """
     Verifies that the installer is started and left running rather than waited on.
@@ -145,7 +145,7 @@ def test_launch_detaches_the_installer_from_this_process(installer):
 
     fake_subprocess = _fake_subprocess(DETACHED_PROCESS=8, CREATE_NEW_PROCESS_GROUP=512)
 
-    with patch("fishbowl_common.UpdateInstaller.subprocess", fake_subprocess):
+    with patch("fishbowl_common.update_installer.subprocess", fake_subprocess):
         installer.launch(_INSTALLER)
 
     assert fake_subprocess.Popen.call_args.kwargs["creationflags"] == 520
@@ -164,13 +164,13 @@ def test_launch_falls_back_to_no_flags_where_they_do_not_exist(installer):
 
     fake_subprocess = _fake_subprocess()
 
-    with patch("fishbowl_common.UpdateInstaller.subprocess", fake_subprocess):
+    with patch("fishbowl_common.update_installer.subprocess", fake_subprocess):
         installer.launch(_INSTALLER)
 
     assert fake_subprocess.Popen.call_args.kwargs["creationflags"] == 0
 
 
-@patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
+@patch("fishbowl_common.update_installer.subprocess.Popen")
 def test_launch_returns_false_when_the_installer_cannot_be_started(mock_popen, installer):
     """
     Verifies that an installer that will not start is reported rather than raising,
@@ -187,7 +187,7 @@ def test_launch_returns_false_when_the_installer_cannot_be_started(mock_popen, i
     assert installer.launch(_INSTALLER) is False
 
 
-@patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
+@patch("fishbowl_common.update_installer.subprocess.Popen")
 def test_launch_lets_the_installer_force_close_the_application(mock_popen, installer):
     """
     Verifies that the installer is allowed to terminate an application that will not
@@ -208,7 +208,7 @@ def test_launch_lets_the_installer_force_close_the_application(mock_popen, insta
     assert "/FORCECLOSEAPPLICATIONS" in command
 
 
-@patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
+@patch("fishbowl_common.update_installer.subprocess.Popen")
 def test_launch_strips_the_pyinstaller_variables_from_the_environment(mock_popen, installer):
     """
     Verifies that the bootloader's variables are kept out of the environment the
@@ -228,7 +228,7 @@ def test_launch_strips_the_pyinstaller_variables_from_the_environment(mock_popen
         "_MEIPASS2": r"C:\Temp\_MEI123",
     }
 
-    with patch.dict("fishbowl_common.UpdateInstaller.os.environ", frozen):
+    with patch.dict("fishbowl_common.update_installer.os.environ", frozen):
         installer.launch(_INSTALLER)
 
     environment = mock_popen.call_args.kwargs["env"]
@@ -236,7 +236,7 @@ def test_launch_strips_the_pyinstaller_variables_from_the_environment(mock_popen
     assert "_MEIPASS2" not in environment
 
 
-@patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
+@patch("fishbowl_common.update_installer.subprocess.Popen")
 def test_launch_passes_the_rest_of_the_environment_through(mock_popen, installer):
     """
     Verifies that everything other than the bootloader's own variables survives. The
@@ -249,7 +249,7 @@ def test_launch_passes_the_rest_of_the_environment_through(mock_popen, installer
     """
 
     with patch.dict(
-        "fishbowl_common.UpdateInstaller.os.environ",
+        "fishbowl_common.update_installer.os.environ",
         {"_PYI_ARCHIVE_FILE": r"C:\App\App.exe", "TEMP": r"C:\Temp"},
     ):
         installer.launch(_INSTALLER)
@@ -257,7 +257,7 @@ def test_launch_passes_the_rest_of_the_environment_through(mock_popen, installer
     assert mock_popen.call_args.kwargs["env"]["TEMP"] == r"C:\Temp"
 
 
-@patch("fishbowl_common.UpdateInstaller.subprocess.Popen")
+@patch("fishbowl_common.update_installer.subprocess.Popen")
 def test_launch_passes_an_environment_even_with_nothing_to_strip(mock_popen, installer):
     """
     Verifies that an environment is always supplied explicitly rather than left to be
@@ -269,7 +269,7 @@ def test_launch_passes_an_environment_even_with_nothing_to_strip(mock_popen, ins
         installer (pytest.fixture): Provides the installer under test
     """
 
-    with patch.dict("fishbowl_common.UpdateInstaller.os.environ", {"TEMP": r"C:\Temp"}, clear=True):
+    with patch.dict("fishbowl_common.update_installer.os.environ", {"TEMP": r"C:\Temp"}, clear=True):
         installer.launch(_INSTALLER)
 
     assert mock_popen.call_args.kwargs["env"] == {"TEMP": r"C:\Temp"}
