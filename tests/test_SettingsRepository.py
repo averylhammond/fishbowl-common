@@ -1,8 +1,9 @@
 import sqlite3
-import pytest
 from contextlib import closing
 from types import SimpleNamespace
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from fishbowl_common.SettingsRepository import SettingsRepository
 
@@ -24,7 +25,6 @@ def settings_repo():
     """
 
     with patch("fishbowl_common.SettingsRepository.sqlite3.connect") as mock_connect:
-
         # The object bound by `with closing(sqlite3.connect(...)) as connection`.
         # closing() yields the object it wraps, so this is what connect returned.
         mock_connection = mock_connect.return_value
@@ -100,9 +100,7 @@ def test_init_creates_data_dir_and_settings_table(settings_repo):
     """
 
     # The data directory is created before SQLite opens the database file
-    settings_repo.db_path.parent.mkdir.assert_called_once_with(
-        parents=True, exist_ok=True
-    )
+    settings_repo.db_path.parent.mkdir.assert_called_once_with(parents=True, exist_ok=True)
 
     # The settings table is created if it does not already exist
     settings_repo.connection.execute.assert_called_once_with(
@@ -122,7 +120,6 @@ def test_init_closes_the_connection(settings_repo):
 
     # The fixture's construction is the only call, so one close is expected
     settings_repo.connection.close.assert_called_once()
-
 
 
 def test_initialize_database_error_is_reported(settings_repo):
@@ -183,9 +180,7 @@ def test_get_all_settings_returns_mapping(settings_repo):
 
     # The rows are returned as a key/value dict
     assert result == {"theme": "Ocean", "font_size": "14"}
-    settings_repo.connection.execute.assert_called_with(
-        "SELECT key, value FROM settings"
-    )
+    settings_repo.connection.execute.assert_called_with("SELECT key, value FROM settings")
 
 
 def test_get_all_settings_empty_returns_empty_dict(settings_repo):
@@ -219,7 +214,6 @@ def test_get_all_settings_closes_the_connection(settings_repo):
     settings_repo.connection.close.assert_called_once()
 
 
-
 def test_get_all_settings_error_reports_and_returns_empty(settings_repo):
     """
     Verifies that a sqlite3 failure while reading settings is reported and results
@@ -249,8 +243,7 @@ def test_save_setting_upserts_key_and_value(settings_repo):
     settings_repo.repo.save_setting("theme", "Forest")
 
     settings_repo.connection.execute.assert_called_with(
-        "INSERT INTO settings (key, value) VALUES (?, ?) "
-        "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
         ("theme", "Forest"),
     )
 
@@ -271,7 +264,6 @@ def test_save_setting_closes_the_connection(settings_repo):
     settings_repo.repo.save_setting("theme", "Forest")
 
     settings_repo.connection.close.assert_called_once()
-
 
 
 def test_save_setting_error_is_reported(settings_repo):
@@ -328,9 +320,7 @@ def test_initialize_database_creates_the_settings_schema(real_settings_repo):
     # PRAGMA table_info yields (cid, name, type, notnull, default, pk) per column
     columns = [
         (name, type_, pk)
-        for _, name, type_, _, _, pk in _query(
-            real_settings_repo.db_path, "PRAGMA table_info(settings)"
-        )
+        for _, name, type_, _, _, pk in _query(real_settings_repo.db_path, "PRAGMA table_info(settings)")
     ]
 
     # Text-only storage, keyed on `key`, is the contract the consuming apps rely on

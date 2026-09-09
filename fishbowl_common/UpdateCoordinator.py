@@ -1,6 +1,7 @@
 import threading
+from collections.abc import Callable
 from functools import partial
-from typing import Callable, Protocol
+from typing import Protocol
 
 from fishbowl_common.UpdateChecker import (
     CHECK_ERROR_HTTP,
@@ -30,24 +31,15 @@ CHECK_FAILED_TITLE = "Update Check Failed"
 # after their internet connection sends them after a problem they do not have.
 CHECK_FAILED_MESSAGES = {
     CHECK_ERROR_RATE_LIMITED: (
-        "GitHub is temporarily limiting update checks from this network. Please "
-        "try again later."
+        "GitHub is temporarily limiting update checks from this network. Please try again later."
     ),
-    CHECK_ERROR_HTTP: (
-        "GitHub could not be asked for the latest release. Please try again later."
-    ),
-    CHECK_ERROR_RESPONSE: (
-        "GitHub's answer to the update check could not be read. Please try again "
-        "later."
-    ),
+    CHECK_ERROR_HTTP: ("GitHub could not be asked for the latest release. Please try again later."),
+    CHECK_ERROR_RESPONSE: ("GitHub's answer to the update check could not be read. Please try again later."),
 }
 
 # Used when the check failed for any other reason - including a caller that reported
 # none - where an unreachable network is the likeliest explanation.
-DEFAULT_CHECK_FAILED_MESSAGE = (
-    "Could not check for updates. Please check your internet connection and try "
-    "again."
-)
+DEFAULT_CHECK_FAILED_MESSAGE = "Could not check for updates. Please check your internet connection and try again."
 
 
 # UpdateDisplay describes the narrow slice of an application window the coordinator
@@ -55,10 +47,7 @@ DEFAULT_CHECK_FAILED_MESSAGE = (
 # is what keeps this module - and with it the headless half of the package - free of
 # any tkinter import, even though the object passed in is a Tk window.
 class UpdateDisplay(Protocol):
-
-    def after(
-        self, ms: int, func: Callable[..., object] | None = None, *args: object
-    ) -> str:
+    def after(self, ms: int, func: Callable[..., object] | None = None, *args: object) -> str:
         """
         Schedules a callback to run on the GUI thread after a delay.
 
@@ -71,9 +60,7 @@ class UpdateDisplay(Protocol):
             The scheduled callback's identifier.
         """
 
-    def show_update_available(
-        self, result: UpdateCheckResult, start_install: StartInstall | None = None
-    ) -> None:
+    def show_update_available(self, result: UpdateCheckResult, start_install: StartInstall | None = None) -> None:
         """
         Notifies the user that a newer release is available.
 
@@ -102,7 +89,6 @@ class UpdateDisplay(Protocol):
 # step and none of them know about threads or windows; this is where those steps
 # are sequenced and marshalled back onto the thread that owns the toolkit.
 class UpdateCoordinator:
-
     def __init__(
         self,
         current_version: str,
@@ -203,11 +189,7 @@ class UpdateCoordinator:
         """
 
         if result and result.update_available:
-            start_install = (
-                partial(self.start_install, result)
-                if self._can_install(result)
-                else None
-            )
+            start_install = partial(self.start_install, result) if self._can_install(result) else None
             self.display.show_update_available(result, start_install)
         elif manual:
             if result is None:
@@ -237,11 +219,7 @@ class UpdateCoordinator:
             True if the in-place install can be offered.
         """
 
-        return bool(
-            result.installer_asset
-            and result.checksums_asset
-            and UpdateInstaller.is_supported()
-        )
+        return bool(result.installer_asset and result.checksums_asset and UpdateInstaller.is_supported())
 
     def start_install(
         self,
@@ -294,9 +272,7 @@ class UpdateCoordinator:
         downloader = UpdateDownloader()
         installer_asset = result.installer_asset
 
-        expected_sha256 = downloader.fetch_expected_sha256(
-            result.checksums_asset.download_url, installer_asset.name
-        )
+        expected_sha256 = downloader.fetch_expected_sha256(result.checksums_asset.download_url, installer_asset.name)
 
         installer = None
         if expected_sha256:
@@ -305,9 +281,7 @@ class UpdateCoordinator:
                 downloader.default_destination(installer_asset.name),
                 expected_sha256,
                 installer_asset.size,
-                lambda received, total: self.display.after(
-                    0, on_progress, received, total
-                ),
+                lambda received, total: self.display.after(0, on_progress, received, total),
             )
 
         # Read on this thread and stored before the outcome crosses over, so the

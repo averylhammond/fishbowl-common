@@ -24,7 +24,6 @@ TEXT_HEIGHT = 20
 # snapshots the active theme/font at open time and centers itself over the main
 # application window (both handled by ThemedSubwindow).
 class PatchNotesWindow(ThemedSubwindow):
-
     def __init__(
         self,
         parent: tk.Misc,

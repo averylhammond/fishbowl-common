@@ -8,7 +8,6 @@ from fishbowl_common.gui.color_theme import Theme
 # to show and hide a small borderless Toplevel positioned near the widget. The
 # tooltip is styled with the active theme/font so it matches the rest of the UI.
 class Tooltip:
-
     # Delay (in milliseconds) before a hovered tooltip appears, so it does not
     # flicker as the pointer merely passes over a widget on its way elsewhere.
     SHOW_DELAY_MS = 500

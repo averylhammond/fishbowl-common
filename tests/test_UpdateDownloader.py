@@ -1,12 +1,12 @@
 import hashlib
-import pytest
 import urllib.error
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from fishbowl_common.UpdateDownloader import (
-    UpdateDownloader,
     CHUNK_SIZE,
     DOWNLOAD_ERROR_DIGEST,
     DOWNLOAD_ERROR_HTTP,
@@ -15,6 +15,7 @@ from fishbowl_common.UpdateDownloader import (
     DOWNLOAD_ERROR_NO_DIGEST,
     DOWNLOAD_ERROR_SIZE,
     DOWNLOAD_TIMEOUT_SECONDS,
+    UpdateDownloader,
 )
 
 # Asset the tests download, and the URLs they download it from. Nothing is
@@ -34,8 +35,9 @@ def downloader():
     """
     Builds an UpdateDownloader with a mock destination path, so a test can assert
     on how a failed download is cleaned up without a real file ever existing. The
-    downloader itself has no collaborators to inject: it reaches the network and the
-    disk through urllib and open, both patched per test at their point of use.
+    downloader itself has no collaborators to inject: it reaches the network through
+    urllib, patched per test at its point of use, and the disk through the
+    destination path's own open(), which this mock provides.
 
     Returns:
         types.SimpleNamespace: Holds the downloader under test (`downloader`) and
@@ -99,7 +101,7 @@ def _download_response(chunks=_CHUNKS, content_length="15"):
     """
 
     mock_response = MagicMock()
-    mock_response.read.side_effect = list(chunks) + [b""]
+    mock_response.read.side_effect = [*chunks, b""]
     mock_response.headers.get.return_value = content_length
 
     # The object bound by `with urllib.request.urlopen(...) as response`
@@ -130,9 +132,7 @@ def _text_response(text: str):
 
 
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_fetch_expected_sha256_returns_the_digest_published_for_the_asset(
-    mock_urlopen, downloader
-):
+def test_fetch_expected_sha256_returns_the_digest_published_for_the_asset(mock_urlopen, downloader):
     """
     Verifies that the digest is read from the line naming this asset, not merely the
     first line of the file, so a release publishing several assets verifies the
@@ -143,9 +143,7 @@ def test_fetch_expected_sha256_returns_the_digest_published_for_the_asset(
         downloader (pytest.fixture): Provides the downloader under test
     """
 
-    mock_urlopen.return_value = _text_response(
-        f"{'a' * 64}  App.zip\n{_PAYLOAD_SHA256}  {_ASSET_NAME}\n"
-    )
+    mock_urlopen.return_value = _text_response(f"{'a' * 64}  App.zip\n{_PAYLOAD_SHA256}  {_ASSET_NAME}\n")
 
     digest = downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME)
 
@@ -174,9 +172,8 @@ def test_fetch_expected_sha256_identifies_itself(mock_urlopen, downloader):
     assert _sent_headers(mock_urlopen)["user-agent"] == "fishbowl-common"
 
 
-@patch("fishbowl_common.UpdateDownloader.open")
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_download_identifies_itself(mock_urlopen, _mock_open, downloader):
+def test_download_identifies_itself(mock_urlopen, downloader):
     """
     Verifies that the installer download carries the same User-Agent as the check
     and the checksums fetch, so the whole flow is identifiable rather than only the
@@ -184,23 +181,18 @@ def test_download_identifies_itself(mock_urlopen, _mock_open, downloader):
 
     Args:
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
-        _mock_open (unittest.mock.MagicMock): Mocks the builtin open
         downloader (pytest.fixture): Provides the downloader under test
     """
 
     mock_urlopen.return_value = _download_response()
 
-    downloader.downloader.download(
-        _ASSET_URL, downloader.destination, _PAYLOAD_SHA256
-    )
+    downloader.downloader.download(_ASSET_URL, downloader.destination, _PAYLOAD_SHA256)
 
     assert _sent_headers(mock_urlopen)["user-agent"] == "fishbowl-common"
 
 
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_fetch_expected_sha256_accepts_the_binary_mode_marker(
-    mock_urlopen, downloader
-):
+def test_fetch_expected_sha256_accepts_the_binary_mode_marker(mock_urlopen, downloader):
     """
     Verifies that the "*" a binary-mode sha256sum entry carries in front of the
     filename does not stop the entry being matched - which is how the tool writes
@@ -211,20 +203,13 @@ def test_fetch_expected_sha256_accepts_the_binary_mode_marker(
         downloader (pytest.fixture): Provides the downloader under test
     """
 
-    mock_urlopen.return_value = _text_response(
-        f"{_PAYLOAD_SHA256} *{_ASSET_NAME}\n"
-    )
+    mock_urlopen.return_value = _text_response(f"{_PAYLOAD_SHA256} *{_ASSET_NAME}\n")
 
-    assert (
-        downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME)
-        == _PAYLOAD_SHA256
-    )
+    assert downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME) == _PAYLOAD_SHA256
 
 
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_fetch_expected_sha256_lowercases_the_published_digest(
-    mock_urlopen, downloader
-):
+def test_fetch_expected_sha256_lowercases_the_published_digest(mock_urlopen, downloader):
     """
     Verifies that an uppercase digest is normalized, since the comparison it feeds
     is against hexdigest()'s lowercase output.
@@ -234,20 +219,13 @@ def test_fetch_expected_sha256_lowercases_the_published_digest(
         downloader (pytest.fixture): Provides the downloader under test
     """
 
-    mock_urlopen.return_value = _text_response(
-        f"{_PAYLOAD_SHA256.upper()}  {_ASSET_NAME}\n"
-    )
+    mock_urlopen.return_value = _text_response(f"{_PAYLOAD_SHA256.upper()}  {_ASSET_NAME}\n")
 
-    assert (
-        downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME)
-        == _PAYLOAD_SHA256
-    )
+    assert downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME) == _PAYLOAD_SHA256
 
 
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_fetch_expected_sha256_skips_lines_that_are_not_digest_entries(
-    mock_urlopen, downloader
-):
+def test_fetch_expected_sha256_skips_lines_that_are_not_digest_entries(mock_urlopen, downloader):
     """
     Verifies that a blank line, a comment, or an entry whose first field is not a
     digest is passed over rather than mistaken for one.
@@ -258,21 +236,14 @@ def test_fetch_expected_sha256_skips_lines_that_are_not_digest_entries(
     """
 
     mock_urlopen.return_value = _text_response(
-        f"\n# generated by the release workflow\n"
-        f"nonsense  {_ASSET_NAME}\n"
-        f"{_PAYLOAD_SHA256}  {_ASSET_NAME}\n"
+        f"\n# generated by the release workflow\nnonsense  {_ASSET_NAME}\n{_PAYLOAD_SHA256}  {_ASSET_NAME}\n"
     )
 
-    assert (
-        downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME)
-        == _PAYLOAD_SHA256
-    )
+    assert downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME) == _PAYLOAD_SHA256
 
 
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_fetch_expected_sha256_returns_none_when_the_asset_is_not_listed(
-    mock_urlopen, downloader
-):
+def test_fetch_expected_sha256_returns_none_when_the_asset_is_not_listed(mock_urlopen, downloader):
     """
     Verifies that a checksums file listing nothing for this asset yields None, which
     is what stops an unverifiable installer from ever being downloaded.
@@ -284,17 +255,12 @@ def test_fetch_expected_sha256_returns_none_when_the_asset_is_not_listed(
 
     mock_urlopen.return_value = _text_response(f"{_PAYLOAD_SHA256}  App.zip\n")
 
-    assert (
-        downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME)
-        is None
-    )
+    assert downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME) is None
     assert downloader.downloader.last_error == DOWNLOAD_ERROR_NO_DIGEST
 
 
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_fetch_expected_sha256_returns_none_on_network_error(
-    mock_urlopen, downloader
-):
+def test_fetch_expected_sha256_returns_none_on_network_error(mock_urlopen, downloader):
     """
     Verifies that a network failure is swallowed and reported as None rather than
     raising, matching how every other class in this package reports a problem.
@@ -306,17 +272,12 @@ def test_fetch_expected_sha256_returns_none_on_network_error(
 
     mock_urlopen.side_effect = urllib.error.URLError("no network")
 
-    assert (
-        downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME)
-        is None
-    )
+    assert downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME) is None
     assert downloader.downloader.last_error == DOWNLOAD_ERROR_NETWORK
 
 
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_fetch_expected_sha256_separates_a_refusal_from_being_offline(
-    mock_urlopen, downloader
-):
+def test_fetch_expected_sha256_separates_a_refusal_from_being_offline(mock_urlopen, downloader):
     """
     Verifies that a host answering with a status - a proxy blocking the transfer,
     or an asset withdrawn from the release - is recorded as an HTTP failure. HTTPError
@@ -330,17 +291,12 @@ def test_fetch_expected_sha256_separates_a_refusal_from_being_offline(
 
     mock_urlopen.side_effect = _http_error(_CHECKSUMS_URL)
 
-    assert (
-        downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME)
-        is None
-    )
+    assert downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME) is None
     assert downloader.downloader.last_error == DOWNLOAD_ERROR_HTTP
 
 
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_fetch_expected_sha256_reports_an_unreadable_response(
-    mock_urlopen, downloader
-):
+def test_fetch_expected_sha256_reports_an_unreadable_response(mock_urlopen, downloader):
     """
     Verifies that a socket error raised outside URLError is reported as an I/O
     failure rather than escaping into the worker thread.
@@ -352,17 +308,12 @@ def test_fetch_expected_sha256_reports_an_unreadable_response(
 
     mock_urlopen.side_effect = OSError("connection reset by peer")
 
-    assert (
-        downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME)
-        is None
-    )
+    assert downloader.downloader.fetch_expected_sha256(_CHECKSUMS_URL, _ASSET_NAME) is None
     assert downloader.downloader.last_error == DOWNLOAD_ERROR_IO
 
 
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_fetch_expected_sha256_clears_the_error_once_a_fetch_succeeds(
-    mock_urlopen, downloader
-):
+def test_fetch_expected_sha256_clears_the_error_once_a_fetch_succeeds(mock_urlopen, downloader):
     """
     Verifies that a successful fetch leaves no error behind, so the coordinator -
     which fetches and downloads through one downloader - cannot report a failure
@@ -383,18 +334,14 @@ def test_fetch_expected_sha256_clears_the_error_once_a_fetch_succeeds(
     assert downloader.downloader.last_error is None
 
 
-@patch("fishbowl_common.UpdateDownloader.open")
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_download_writes_the_asset_and_returns_it_when_verified(
-    mock_urlopen, mock_open, downloader
-):
+def test_download_writes_the_asset_and_returns_it_when_verified(mock_urlopen, downloader):
     """
     Verifies that a download matching its published size and digest is written to
     the destination, chunk by chunk, and handed back to the caller.
 
     Args:
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
-        mock_open (unittest.mock.MagicMock): Mocks the builtin open
         downloader (pytest.fixture): Provides the downloader under test
     """
 
@@ -411,18 +358,17 @@ def test_download_writes_the_asset_and_returns_it_when_verified(
     mock_urlopen.assert_called_once()
     assert mock_urlopen.call_args.args[0].full_url == _ASSET_URL
     assert mock_urlopen.call_args.kwargs == {"timeout": DOWNLOAD_TIMEOUT_SECONDS}
-    mock_open.assert_called_once_with(downloader.destination, "wb")
+    downloader.destination.open.assert_called_once_with("wb")
 
     # The body is written as it arrives rather than buffered whole, which is what
     # keeps a multi-megabyte installer off the heap
-    written = mock_open.return_value.__enter__.return_value.write
+    written = downloader.destination.open.return_value.__enter__.return_value.write
     assert [call.args[0] for call in written.call_args_list] == list(_CHUNKS)
     downloader.destination.unlink.assert_not_called()
 
 
-@patch("fishbowl_common.UpdateDownloader.open")
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_download_reads_the_body_in_chunks(mock_urlopen, _mock_open, downloader):
+def test_download_reads_the_body_in_chunks(mock_urlopen, downloader):
     """
     Verifies that the response is read a chunk at a time, since a single read() of
     the whole body would leave the progress callback with nothing to report until
@@ -430,26 +376,20 @@ def test_download_reads_the_body_in_chunks(mock_urlopen, _mock_open, downloader)
 
     Args:
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
-        _mock_open (unittest.mock.MagicMock): Mocks the builtin open
         downloader (pytest.fixture): Provides the downloader under test
     """
 
     response = _download_response()
     mock_urlopen.return_value = response
 
-    downloader.downloader.download(
-        _ASSET_URL, downloader.destination, _PAYLOAD_SHA256
-    )
+    downloader.downloader.download(_ASSET_URL, downloader.destination, _PAYLOAD_SHA256)
 
     read = response.__enter__.return_value.read
     assert read.call_args_list[0].args == (CHUNK_SIZE,)
 
 
-@patch("fishbowl_common.UpdateDownloader.open")
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_download_reports_progress_as_the_transfer_advances(
-    mock_urlopen, _mock_open, downloader
-):
+def test_download_reports_progress_as_the_transfer_advances(mock_urlopen, downloader):
     """
     Verifies that progress is reported once before the first chunk and once after
     each one, against the total the response declares - the sequence a progress bar
@@ -457,7 +397,6 @@ def test_download_reports_progress_as_the_transfer_advances(
 
     Args:
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
-        _mock_open (unittest.mock.MagicMock): Mocks the builtin open
         downloader (pytest.fixture): Provides the downloader under test
     """
 
@@ -478,18 +417,14 @@ def test_download_reports_progress_as_the_transfer_advances(
     ]
 
 
-@patch("fishbowl_common.UpdateDownloader.open")
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_download_falls_back_to_the_published_size_on_an_unreadable_header(
-    mock_urlopen, _mock_open, downloader
-):
+def test_download_falls_back_to_the_published_size_on_an_unreadable_header(mock_urlopen, downloader):
     """
     Verifies that a Content-Length that is not a number falls back to the published
     size rather than failing a download that is otherwise perfectly good.
 
     Args:
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
-        _mock_open (unittest.mock.MagicMock): Mocks the builtin open
         downloader (pytest.fixture): Provides the downloader under test
     """
 
@@ -508,18 +443,14 @@ def test_download_falls_back_to_the_published_size_on_an_unreadable_header(
     assert progress.call_args_list[0].args == (0, 15)
 
 
-@patch("fishbowl_common.UpdateDownloader.open")
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_download_falls_back_to_the_published_size_for_progress(
-    mock_urlopen, _mock_open, downloader
-):
+def test_download_falls_back_to_the_published_size_for_progress(mock_urlopen, downloader):
     """
     Verifies that a response reporting no Content-Length still yields a total to
     measure progress against, taken from the size the release published.
 
     Args:
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
-        _mock_open (unittest.mock.MagicMock): Mocks the builtin open
         downloader (pytest.fixture): Provides the downloader under test
     """
 
@@ -541,11 +472,8 @@ def test_download_falls_back_to_the_published_size_for_progress(
     ]
 
 
-@patch("fishbowl_common.UpdateDownloader.open")
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_download_reports_a_zero_total_when_no_size_is_known(
-    mock_urlopen, _mock_open, downloader
-):
+def test_download_reports_a_zero_total_when_no_size_is_known(mock_urlopen, downloader):
     """
     Verifies that a transfer whose size neither the response nor the release
     declares reports a total of 0, so the caller can tell an unknown length from a
@@ -553,16 +481,13 @@ def test_download_reports_a_zero_total_when_no_size_is_known(
 
     Args:
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
-        _mock_open (unittest.mock.MagicMock): Mocks the builtin open
         downloader (pytest.fixture): Provides the downloader under test
     """
 
     mock_urlopen.return_value = _download_response(content_length=None)
     progress = MagicMock()
 
-    downloader.downloader.download(
-        _ASSET_URL, downloader.destination, _PAYLOAD_SHA256, progress=progress
-    )
+    downloader.downloader.download(_ASSET_URL, downloader.destination, _PAYLOAD_SHA256, progress=progress)
 
     assert [call.args for call in progress.call_args_list] == [
         (0, 0),
@@ -571,11 +496,8 @@ def test_download_reports_a_zero_total_when_no_size_is_known(
     ]
 
 
-@patch("fishbowl_common.UpdateDownloader.open")
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_download_discards_and_returns_none_on_a_digest_mismatch(
-    mock_urlopen, _mock_open, downloader
-):
+def test_download_discards_and_returns_none_on_a_digest_mismatch(mock_urlopen, downloader):
     """
     Verifies that a file hashing to anything other than the published digest is
     deleted and reported as a failure. This is the check the whole feature rests on:
@@ -584,59 +506,46 @@ def test_download_discards_and_returns_none_on_a_digest_mismatch(
 
     Args:
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
-        _mock_open (unittest.mock.MagicMock): Mocks the builtin open
         downloader (pytest.fixture): Provides the downloader under test
     """
 
     mock_urlopen.return_value = _download_response()
 
-    result = downloader.downloader.download(
-        _ASSET_URL, downloader.destination, "b" * 64
-    )
+    result = downloader.downloader.download(_ASSET_URL, downloader.destination, "b" * 64)
 
     assert result is None
     assert downloader.downloader.last_error == DOWNLOAD_ERROR_DIGEST
     downloader.destination.unlink.assert_called_once_with(missing_ok=True)
 
 
-@patch("fishbowl_common.UpdateDownloader.open")
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_download_discards_and_returns_none_on_a_size_mismatch(
-    mock_urlopen, _mock_open, downloader
-):
+def test_download_discards_and_returns_none_on_a_size_mismatch(mock_urlopen, downloader):
     """
     Verifies that a transfer that ended at the wrong length is deleted and reported
     as a failure, so a connection cut short is caught as the truncation it is.
 
     Args:
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
-        _mock_open (unittest.mock.MagicMock): Mocks the builtin open
         downloader (pytest.fixture): Provides the downloader under test
     """
 
     mock_urlopen.return_value = _download_response()
 
-    result = downloader.downloader.download(
-        _ASSET_URL, downloader.destination, _PAYLOAD_SHA256, len(_PAYLOAD) + 1
-    )
+    result = downloader.downloader.download(_ASSET_URL, downloader.destination, _PAYLOAD_SHA256, len(_PAYLOAD) + 1)
 
     assert result is None
     assert downloader.downloader.last_error == DOWNLOAD_ERROR_SIZE
     downloader.destination.unlink.assert_called_once_with(missing_ok=True)
 
 
-@patch("fishbowl_common.UpdateDownloader.open")
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_download_discards_and_returns_none_when_the_connection_drops(
-    mock_urlopen, _mock_open, downloader
-):
+def test_download_discards_and_returns_none_when_the_connection_drops(mock_urlopen, downloader):
     """
     Verifies that a connection failing part-way through leaves no partial file
     behind and is reported as a failure rather than raising into the worker thread.
 
     Args:
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
-        _mock_open (unittest.mock.MagicMock): Mocks the builtin open
         downloader (pytest.fixture): Provides the downloader under test
     """
 
@@ -647,20 +556,15 @@ def test_download_discards_and_returns_none_when_the_connection_drops(
     ]
     mock_urlopen.return_value = response
 
-    result = downloader.downloader.download(
-        _ASSET_URL, downloader.destination, _PAYLOAD_SHA256
-    )
+    result = downloader.downloader.download(_ASSET_URL, downloader.destination, _PAYLOAD_SHA256)
 
     assert result is None
     assert downloader.downloader.last_error == DOWNLOAD_ERROR_NETWORK
     downloader.destination.unlink.assert_called_once_with(missing_ok=True)
 
 
-@patch("fishbowl_common.UpdateDownloader.open")
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_download_discards_and_reports_a_refusal_as_an_http_failure(
-    mock_urlopen, _mock_open, downloader
-):
+def test_download_discards_and_reports_a_refusal_as_an_http_failure(mock_urlopen, downloader):
     """
     Verifies that a host refusing the transfer outright is discarded like any other
     failure and recorded as an HTTP failure, so a proxy block is not reported to the
@@ -668,110 +572,76 @@ def test_download_discards_and_reports_a_refusal_as_an_http_failure(
 
     Args:
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
-        _mock_open (unittest.mock.MagicMock): Mocks the builtin open
         downloader (pytest.fixture): Provides the downloader under test
     """
 
     mock_urlopen.side_effect = _http_error(_ASSET_URL)
 
-    result = downloader.downloader.download(
-        _ASSET_URL, downloader.destination, _PAYLOAD_SHA256
-    )
+    result = downloader.downloader.download(_ASSET_URL, downloader.destination, _PAYLOAD_SHA256)
 
     assert result is None
     assert downloader.downloader.last_error == DOWNLOAD_ERROR_HTTP
     downloader.destination.unlink.assert_called_once_with(missing_ok=True)
 
 
-@patch("fishbowl_common.UpdateDownloader.open")
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_download_clears_the_error_once_a_download_succeeds(
-    mock_urlopen, _mock_open, downloader
-):
+def test_download_clears_the_error_once_a_download_succeeds(mock_urlopen, downloader):
     """
     Verifies that a verified download leaves no error behind, so a reused downloader
     cannot report a failure that has since resolved itself.
 
     Args:
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
-        _mock_open (unittest.mock.MagicMock): Mocks the builtin open
         downloader (pytest.fixture): Provides the downloader under test
     """
 
     mock_urlopen.side_effect = _http_error(_ASSET_URL)
-    downloader.downloader.download(
-        _ASSET_URL, downloader.destination, _PAYLOAD_SHA256
-    )
+    downloader.downloader.download(_ASSET_URL, downloader.destination, _PAYLOAD_SHA256)
 
     mock_urlopen.side_effect = None
     mock_urlopen.return_value = _download_response()
 
-    assert (
-        downloader.downloader.download(
-            _ASSET_URL, downloader.destination, _PAYLOAD_SHA256
-        )
-        is downloader.destination
-    )
+    assert downloader.downloader.download(_ASSET_URL, downloader.destination, _PAYLOAD_SHA256) is downloader.destination
     assert downloader.downloader.last_error is None
 
 
-@patch("fishbowl_common.UpdateDownloader.open")
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_download_returns_none_when_the_file_cannot_be_written(
-    mock_urlopen, mock_open, downloader
-):
+def test_download_returns_none_when_the_file_cannot_be_written(mock_urlopen, downloader):
     """
     Verifies that a disk failure is reported as a failure rather than raising, so a
     full or unwritable temp directory falls back to the manual download.
 
     Args:
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
-        mock_open (unittest.mock.MagicMock): Mocks the builtin open
         downloader (pytest.fixture): Provides the downloader under test
     """
 
     mock_urlopen.return_value = _download_response()
-    mock_open.side_effect = OSError("no space left on device")
+    downloader.destination.open.side_effect = OSError("no space left on device")
 
-    assert (
-        downloader.downloader.download(
-            _ASSET_URL, downloader.destination, _PAYLOAD_SHA256
-        )
-        is None
-    )
+    assert downloader.downloader.download(_ASSET_URL, downloader.destination, _PAYLOAD_SHA256) is None
     assert downloader.downloader.last_error == DOWNLOAD_ERROR_IO
 
 
-@patch("fishbowl_common.UpdateDownloader.open")
 @patch("fishbowl_common.UpdateDownloader.urllib.request.urlopen")
-def test_download_survives_a_cleanup_that_itself_fails(
-    mock_urlopen, _mock_open, downloader
-):
+def test_download_survives_a_cleanup_that_itself_fails(mock_urlopen, downloader):
     """
     Verifies that a delete which cannot be performed does not mask the failure that
     led to it: the caller still gets None rather than an OSError out of the cleanup.
 
     Args:
         mock_urlopen (unittest.mock.MagicMock): Mocks urllib.request.urlopen
-        _mock_open (unittest.mock.MagicMock): Mocks the builtin open
         downloader (pytest.fixture): Provides the downloader under test
     """
 
     mock_urlopen.return_value = _download_response()
     downloader.destination.unlink.side_effect = OSError("file in use")
 
-    assert (
-        downloader.downloader.download(
-            _ASSET_URL, downloader.destination, "b" * 64
-        )
-        is None
-    )
+    assert downloader.downloader.download(_ASSET_URL, downloader.destination, "b" * 64) is None
 
 
 @patch("fishbowl_common.UpdateDownloader.tempfile.mkdtemp")
-def test_default_destination_names_the_asset_inside_a_fresh_temp_directory(
-    mock_mkdtemp, downloader
-):
+def test_default_destination_names_the_asset_inside_a_fresh_temp_directory(mock_mkdtemp, downloader):
     """
     Verifies that the download lands under its own temporary directory, keeping the
     installer clear of anything else in the system temp folder.

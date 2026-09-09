@@ -1,16 +1,16 @@
 import tkinter as tk
 from types import SimpleNamespace
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+from fishbowl_common.gui.color_theme import DARK
+from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
 from fishbowl_common.gui.UpdateWindow import (
-    UpdateWindow,
     CLOSE_DELAY_MS,
     INSTALL_CLOSE_DELAY_MS,
     PROGRESS_BAR_HEIGHT,
     PROGRESS_BAR_WIDTH,
+    UpdateWindow,
 )
-from fishbowl_common.gui.color_theme import DARK
-from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
 
 
 def _distinct_widget(*_args, **_kwargs):
@@ -60,17 +60,10 @@ def _build_window(
         patch.object(UpdateWindow, "title"),
         patch.object(UpdateWindow, "configure"),
         patch.object(UpdateWindow, "_center_over_parent"),
-        patch(
-            "fishbowl_common.gui.UpdateWindow.tk.Label", side_effect=_distinct_widget
-        ) as label_cls,
-        patch(
-            "fishbowl_common.gui.UpdateWindow.tk.Button", side_effect=_distinct_widget
-        ) as button_cls,
-        patch(
-            "fishbowl_common.gui.UpdateWindow.tk.Canvas", side_effect=_distinct_widget
-        ) as canvas_cls,
+        patch("fishbowl_common.gui.UpdateWindow.tk.Label", side_effect=_distinct_widget) as label_cls,
+        patch("fishbowl_common.gui.UpdateWindow.tk.Button", side_effect=_distinct_widget) as button_cls,
+        patch("fishbowl_common.gui.UpdateWindow.tk.Canvas", side_effect=_distinct_widget) as canvas_cls,
     ):
-
         window = UpdateWindow(
             parent=MagicMock(),
             title="Update Available",
@@ -199,9 +192,7 @@ def test_open_release_page_schedules_app_close_after_delay():
     with patch("fishbowl_common.gui.UpdateWindow.webbrowser.open"):
         built.window._open_release_page()
 
-    built.window.after.assert_called_once_with(
-        CLOSE_DELAY_MS, built.close_app_callback
-    )
+    built.window.after.assert_called_once_with(CLOSE_DELAY_MS, built.close_app_callback)
 
 
 def test_open_release_page_ignores_repeat_clicks():
@@ -234,9 +225,7 @@ def test_open_release_page_disables_button_and_updates_label():
     with patch("fishbowl_common.gui.UpdateWindow.webbrowser.open"):
         built.window._open_release_page()
 
-    built.window.info_label.config.assert_called_once_with(
-        text="Closing to install update…"
-    )
+    built.window.info_label.config.assert_called_once_with(text="Closing to install update…")
     built.window.update_button.config.assert_called_once_with(state=tk.DISABLED)
 
 
@@ -300,9 +289,7 @@ def test_update_and_restart_starts_the_install_with_its_own_callbacks():
 
     built.window._update_and_restart()
 
-    start_install.assert_called_once_with(
-        built.window._on_progress, built.window._on_install_finished
-    )
+    start_install.assert_called_once_with(built.window._on_progress, built.window._on_install_finished)
 
 
 def test_update_and_restart_shows_the_bar_and_disables_both_buttons():
@@ -415,9 +402,7 @@ def test_on_install_finished_closes_the_application_once_the_installer_starts():
     built.window._on_install_finished(True)
 
     built.window.info_label.config.assert_called_with(text="Installing update…")
-    built.window.after.assert_called_once_with(
-        INSTALL_CLOSE_DELAY_MS, built.close_app_callback
-    )
+    built.window.after.assert_called_once_with(INSTALL_CLOSE_DELAY_MS, built.close_app_callback)
 
 
 def test_on_install_finished_falls_back_to_the_release_page_on_failure():
@@ -426,18 +411,14 @@ def test_on_install_finished_falls_back_to_the_release_page_on_failure():
     instead, so a broken download costs them the wait and nothing more.
     """
 
-    built = _build_window(
-        release_url="https://example.com/release", start_install_callback=MagicMock()
-    )
+    built = _build_window(release_url="https://example.com/release", start_install_callback=MagicMock())
     built.window.after = MagicMock()
 
     with patch("fishbowl_common.gui.UpdateWindow.webbrowser.open") as mock_open:
         built.window._on_install_finished(False)
 
     mock_open.assert_called_once_with("https://example.com/release")
-    built.window.info_label.config.assert_called_with(
-        text="Automatic update failed. Opening the release page…"
-    )
+    built.window.info_label.config.assert_called_with(text="Automatic update failed. Opening the release page…")
     built.window.after.assert_called_once_with(CLOSE_DELAY_MS, built.close_app_callback)
 
 

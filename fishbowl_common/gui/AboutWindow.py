@@ -12,7 +12,6 @@ from fishbowl_common.gui.ThemedSubwindow import ThemedSubwindow
 # active theme/font at open time and centers itself over the main application
 # window (both handled by ThemedSubwindow).
 class AboutWindow(ThemedSubwindow):
-
     def __init__(
         self,
         parent: tk.Misc,

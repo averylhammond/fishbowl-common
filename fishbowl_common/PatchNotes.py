@@ -9,7 +9,10 @@ from fishbowl_common.version_utils import compare_versions
 # inconsistently), a "[...]" wrapper (the Keep a Changelog format), and any
 # trailing remainder after the version (usually the release date), so a heading
 # reads "## 2.3.0", "## v2.3.0" or "## [2.3.0] - 2026-08-21" equally well.
-SECTION_HEADING = re.compile(r"^##\s+\[?v?(\d+(?:\.\d+)*)\]?\s*(?:[-–—].*)?$")
+# The EN DASH and EM DASH in the separator class are the characters a real heading
+# uses, not typos for a hyphen, so RUF001's ambiguity warning is suppressed rather
+# than fixed: replacing either one stops the parse matching those headings.
+SECTION_HEADING = re.compile(r"^##\s+\[?v?(\d+(?:\.\d+)*)\]?\s*(?:[-–—].*)?$")  # noqa: RUF001
 
 # Separator placed between the sections of consecutive versions when several are
 # shown at once, so each release's notes read as its own block.
@@ -23,7 +26,6 @@ SECTION_SEPARATOR = "\n\n"
 # an update needs no network. The file it is pointed at is injected, so this
 # class carries no knowledge of which application it belongs to.
 class PatchNotes:
-
     def __init__(self, notes_path: Path) -> None:
         """
         Initializes the PatchNotes reader with the file it reads from.
@@ -72,19 +74,14 @@ class PatchNotes:
             (version, body)
             for version, body in self._read_sections()
             if compare_versions(version, current_version) <= 0
-            and (
-                last_seen_version is None
-                or compare_versions(version, last_seen_version) > 0
-            )
+            and (last_seen_version is None or compare_versions(version, last_seen_version) > 0)
         ]
 
         # Order by version rather than trusting the file's own ordering. The
         # comparison is used as the sort key (rather than the parsed tuples) so
         # versions written with different segment counts still sort correctly.
         wanted.sort(
-            key=functools.cmp_to_key(
-                lambda left, right: compare_versions(left[0], right[0])
-            ),
+            key=functools.cmp_to_key(lambda left, right: compare_versions(left[0], right[0])),
             reverse=True,
         )
 
@@ -125,7 +122,4 @@ class PatchNotes:
 
         # Trim each section's trailing blank lines, which are only the spacing
         # that separated it from the next heading in the file
-        return [
-            (version, "\n".join(lines).rstrip())
-            for version, lines in sections
-        ]
+        return [(version, "\n".join(lines).rstrip()) for version, lines in sections]

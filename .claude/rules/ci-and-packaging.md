@@ -7,14 +7,43 @@ paths:
 
 # CI and packaging
 
-## The three workflows
+## The four workflows
 
-Two run on `pull_request` to `main` and `workflow_dispatch`, and `code-coverage.yml` also on
-`push` to `main`; the third runs only on a pushed `v*` tag. All three are `ubuntu-latest` with
-`actions/setup-python@v5` at `3.11.9` and `pip install -e ".[dev,gui]"`.
+Three run on `pull_request` to `main` and `workflow_dispatch`, and `code-coverage.yml` also on
+`push` to `main`; the fourth runs only on a pushed `v*` tag. All four are `ubuntu-latest` with
+`actions/setup-python@v5` at `3.11.9`, and all but `lint.yml` install with
+`pip install -e ".[dev,gui]"`.
 
 `code-coverage.yml` needs a `CODECOV_TOKEN` repo secret. Its triggers, its gate and the two
 flags on the Codecov upload are all load-bearing — see Coverage below.
+
+## `lint.yml` and the ruff config
+
+Two things a reader would otherwise undo:
+
+- **It installs ruff by grepping the pin out of `pyproject.toml`**, rather than
+  `pip install -e ".[dev,gui]"` like the other three. Linting needs neither pytest nor the
+  package installed, and the grep keeps the version single-sourced from the `dev` extra so it
+  cannot drift from what a developer runs locally. The grep and the extra's `"ruff==X.Y.Z"`
+  spelling are one contract.
+- **`ruff format --check` is its own step, carrying `if: always()`.** Kept separate so a
+  formatting-only failure is legible in the job log instead of buried under lint findings, and
+  `always()` so it still reports when `ruff check` has already failed the job.
+
+The `[tool.ruff]` block is **copied** from `FishbowlInvoiceTool`, not shared: ruff's `extend`
+key takes a file path, not a module, so this package cannot publish its config to the two
+consumers even though they install it. Keeping the three copies in step is manual. Four entries
+diverge on purpose, and each carries its reason in `pyproject.toml`:
+
+- **no `extend-exclude`** — everything ruff should skip is already in `.gitignore`, which it
+  honors; there is no untracked sibling clone or private submodule here.
+- **`known-first-party = ["fishbowl_common"]`**, the inverse of both apps.
+- **`N999` is ignored**, deferring the module rename to #39. Consumers import from the two
+  package roots rather than from a module, so that rename is not the public API change it looks
+  like — but it is still not a lint PR's job.
+- **`PLR0915` is *not* ignored**, unlike the apps' copies: nothing here is over the
+  50-statement default. A config-level ignore with no site is invisible — `RUF100` reports an
+  unused inline `# noqa`, and nothing reports an unused entry in that list.
 
 ## `release.yml` — four load-bearing things
 

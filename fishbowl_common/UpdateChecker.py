@@ -54,7 +54,6 @@ TOO_MANY_REQUESTS_STATUS = 429
 # Frozen so what a check surfaced cannot be reshaped before it is downloaded.
 @dataclass(frozen=True)
 class ReleaseAsset:
-
     # The asset's filename as published on the release, e.g.
     # "FishbowlInvoiceTool_Setup.exe".
     name: str
@@ -72,7 +71,6 @@ class ReleaseAsset:
 # result handed to a display cannot be edited on its way through.
 @dataclass(frozen=True)
 class UpdateCheckResult:
-
     # True if the latest published release is strictly newer than the running
     # version.
     update_available: bool
@@ -99,7 +97,6 @@ class UpdateCheckResult:
 # installer and checksums assets, so an application that installs the update itself
 # has everything it needs from the one request.
 class UpdateChecker:
-
     def __init__(
         self,
         current_version: str,
@@ -132,9 +129,7 @@ class UpdateChecker:
         # for this repository. The JSON response exposes the release's `tag_name`
         # (the version), `html_url` (the human-facing release page) and `assets`
         # (the files published alongside it).
-        self.latest_release_url = (
-            f"https://api.github.com/repos/{repo}/releases/latest"
-        )
+        self.latest_release_url = f"https://api.github.com/repos/{repo}/releases/latest"
 
         # Why the most recent check failed, as one of the CHECK_ERROR_* values, or
         # None while no check has failed. Set on every call to check_for_update().
@@ -159,13 +154,9 @@ class UpdateChecker:
         self.last_error = None
 
         try:
-            request = urllib.request.Request(
-                self.latest_release_url, headers=REQUEST_HEADERS
-            )
+            request = urllib.request.Request(self.latest_release_url, headers=REQUEST_HEADERS)
 
-            with urllib.request.urlopen(
-                request, timeout=REQUEST_TIMEOUT_SECONDS
-            ) as response:
+            with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
                 release = json.loads(response.read())
 
             # Normalize the latest tag so a leading "v" (used inconsistently across
@@ -173,9 +164,7 @@ class UpdateChecker:
             latest_version = release["tag_name"].lstrip("vV")
             release_url = release["html_url"]
 
-            update_available = (
-                compare_versions(latest_version, self.current_version) > 0
-            )
+            update_available = compare_versions(latest_version, self.current_version) > 0
 
             assets = release.get("assets") or []
 
@@ -190,11 +179,7 @@ class UpdateChecker:
             # GitHub answered, but with a status instead of a release. Caught ahead
             # of URLError (its base class) so a rate-limited check is not filed as a
             # network failure, which is the one thing it is not.
-            return self._fail(
-                CHECK_ERROR_RATE_LIMITED
-                if self._is_rate_limited(error)
-                else CHECK_ERROR_HTTP
-            )
+            return self._fail(CHECK_ERROR_RATE_LIMITED if self._is_rate_limited(error) else CHECK_ERROR_HTTP)
         except (urllib.error.URLError, OSError):
             # GitHub was never reached: no route, DNS failure, refused connection or
             # a request that outran REQUEST_TIMEOUT_SECONDS.
@@ -245,11 +230,8 @@ class UpdateChecker:
         """
 
         self.last_error = reason
-        return None
 
-    def _find_asset(
-        self, assets: list[dict[str, Any]], pattern: str | None
-    ) -> ReleaseAsset | None:
+    def _find_asset(self, assets: list[dict[str, Any]], pattern: str | None) -> ReleaseAsset | None:
         """
         Picks the first published asset whose filename matches a pattern.
 
@@ -273,8 +255,6 @@ class UpdateChecker:
         for asset in assets:
             name = asset.get("name", "")
             if fnmatch.fnmatch(name, pattern):
-                return ReleaseAsset(
-                    name, asset["browser_download_url"], asset.get("size")
-                )
+                return ReleaseAsset(name, asset["browser_download_url"], asset.get("size"))
 
         return None

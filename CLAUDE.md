@@ -35,12 +35,12 @@ signature is not one PR but three** — here, then `FishbowlInvoiceTool`, then
 - Virtual env: `python -m venv venv`, then `source venv/Scripts/activate` (Windows) or
   `source venv/bin/activate` (Linux/Mac).
 - Install for development: `pip install -e ".[dev,gui]"`. The `dev` extra is
-  `pytest`/`pytest-cov`; the `gui` extra is **empty** and adds no requirements (tkinter ships
-  with CPython) — it exists to mark intent.
-- `pyproject.toml` is the whole of the packaging, pytest and coverage configuration. There is no
-  `setup.py`, `setup.cfg`, `.coveragerc` or `pytest.ini`, unlike the two apps. **The version is
-  the one thing it does not hold**: `version` is `dynamic`, read from
-  `fishbowl_common/_version.py`. Bump it there.
+  `pytest`/`pytest-cov`/`ruff`; the `gui` extra is **empty** and adds no requirements (tkinter
+  ships with CPython) — it exists to mark intent.
+- `pyproject.toml` is the whole of the packaging, pytest, coverage, lint and format
+  configuration. There is no `setup.py`, `setup.cfg`, `.coveragerc`, `pytest.ini` or
+  `ruff.toml`, unlike the two apps. **The version is the one thing it does not hold**:
+  `version` is `dynamic`, read from `fishbowl_common/_version.py`. Bump it there.
 
 ## Common Commands
 
@@ -49,6 +49,8 @@ signature is not one PR but three** — here, then `FishbowlInvoiceTool`, then
 - Run a single test:
   `pytest tests/test_UpdateChecker.py::test_check_for_update_returns_none_on_network_error`
 - Run with coverage: `pytest --cov=fishbowl_common --cov-report=term-missing`
+- Lint: `ruff check .` (add `--fix` to apply the safe fixes, `--statistics` for a summary)
+- Format: `ruff format .` (`--check` to verify without writing, as CI does)
 - Byte-compile sanity check:
   `python -m py_compile fishbowl_common/*.py fishbowl_common/gui/*.py tests/*.py tests/gui/*.py`
 
@@ -126,6 +128,17 @@ consistently with the main window behind it.
   prefixed type repeating the signature. Both apps carry the mirror of this rule. Under `tests/`
   the docstring type stays, since fixture and mock parameters are unannotated — see
   `.claude/rules/tests.md`.
+- **Style is the linter's job.** Line length, quoting, spacing and the rest live in
+  `[tool.ruff]`; run `ruff format` rather than matching the surrounding file by eye. Where a
+  rule is suppressed, the reason sits beside it — in `pyproject.toml` for a policy, or in a
+  comment at the site for a one-off. A rationale comment must not begin with `# noqa`, or ruff
+  reads it as a second directive and reports it unused via `RUF100`. Both apps carry a copy of
+  the `[tool.ruff]` block: ruff's `extend` takes a file path, not a module, so this package
+  cannot publish the config to them and the three copies are kept in step by hand.
+- **Import grouping and ordering are enforced, not remembered.** `ruff check --fix` applies
+  them; `[tool.ruff.lint.isort]` in `pyproject.toml` is the statement of intent, including that
+  `fishbowl_common` is **first party** here — the inverse of both apps, where it is third party
+  installed from a pinned git tag.
 - Keep comments concise: a comment should explain only what the immediately adjacent code does.
   Do not document another module's behavior from a call site.
 - **No banner comment blocks above a `def`.** The `###`-bordered headers naming each method were
@@ -152,12 +165,13 @@ as license for a second exception.
 
 ## CI
 
-Three `ubuntu-latest` workflows. Two run on `pull_request` to `main` and `workflow_dispatch`,
-`code-coverage.yml` also on `push` to `main`; the third runs only on a pushed `v*` tag.
+Four `ubuntu-latest` workflows. Three run on `pull_request` to `main` and `workflow_dispatch`,
+`code-coverage.yml` also on `push` to `main`; the fourth runs only on a pushed `v*` tag.
 
 | Workflow | What it runs |
 | --- | --- |
 | `unit-tests.yml` | bare `pytest` |
+| `lint.yml` | `ruff check` and `ruff format --check`, each its own step |
 | `code-coverage.yml` | `pytest --cov` with `--cov-fail-under=90`, then `codecov/codecov-action@v5` |
 | `release.yml` | two `::error::` gates, `pytest`, `python -m build`, a wheel smoke-install, then `gh release create` |
 
@@ -186,7 +200,7 @@ when a matching file is opened, and in `.claude/skills/`, loaded when invoked.
 | `rules/update-classes.md` | `Update*.py` | The `UpdateInstaller` switch rationale, the download verification contract, coordinator threading |
 | `rules/gui.md` | `gui/**` | Window catalogue, `Tooltip` `add="+"`, the widget-patching test stack |
 | `rules/tests.md` | `tests/**` | Fixtures, patch targets, FIRST, ordering and docstring conventions |
-| `rules/ci-and-packaging.md` | `.github/workflows/**`, `pyproject.toml` | Workflow internals, release gates, coverage gaps |
+| `rules/ci-and-packaging.md` | `.github/workflows/**`, `pyproject.toml` | Workflow internals, release gates, coverage gaps, the ruff config's divergences from the apps' |
 | `rules/versioning.md` | `version_utils.py`, `PatchNotes.py` | The never-raises contract, pre-release limitation, notes-range semantics |
 | `rules/settings-repository.md` | `SettingsRepository.py` | Text-only table, `report_error` mechanics, known defects |
 | `/cut-a-release` | — | Bump, changelog, tag, and the two gates that fail a release |

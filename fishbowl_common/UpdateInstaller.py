@@ -50,7 +50,6 @@ RELAUNCH_ARG = "/RELAUNCH=1"
 # Windows keeps file-locked, so it is launched detached: it must outlive the
 # application that started it rather than dying with it.
 class UpdateInstaller:
-
     @staticmethod
     def is_supported() -> bool:
         """
@@ -114,9 +113,7 @@ class UpdateInstaller:
             The creation flags to hand Popen.
         """
 
-        return getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(
-            subprocess, "CREATE_NEW_PROCESS_GROUP", 0
-        )
+        return getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
 
     def _clean_environment(self) -> dict[str, str]:
         """
@@ -134,6 +131,5 @@ class UpdateInstaller:
         return {
             name: value
             for name, value in os.environ.items()
-            if not name.startswith(PYINSTALLER_ENV_PREFIX)
-            and name not in PYINSTALLER_LEGACY_ENV_VARS
+            if not name.startswith(PYINSTALLER_ENV_PREFIX) and name not in PYINSTALLER_LEGACY_ENV_VARS
         }

@@ -1,10 +1,10 @@
 import tkinter as tk
 from types import SimpleNamespace
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from fishbowl_common.gui.ThemedSubwindow import ThemedSubwindow
 from fishbowl_common.gui.color_theme import DARK
 from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
+from fishbowl_common.gui.ThemedSubwindow import ThemedSubwindow
 
 
 def _build_subwindow():
@@ -23,7 +23,6 @@ def _build_subwindow():
         patch.object(ThemedSubwindow, "title") as mock_title,
         patch.object(ThemedSubwindow, "configure") as mock_configure,
     ):
-
         window = ThemedSubwindow(
             parent=MagicMock(),
             title="Test Window",

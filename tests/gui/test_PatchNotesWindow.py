@@ -1,10 +1,10 @@
 import tkinter as tk
 from types import SimpleNamespace
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from fishbowl_common.gui.PatchNotesWindow import PatchNotesWindow
 from fishbowl_common.gui.color_theme import DARK
 from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
+from fishbowl_common.gui.PatchNotesWindow import PatchNotesWindow
 
 
 def _distinct_widget(*_args, **_kwargs):
@@ -55,7 +55,6 @@ def _build_window(app_name="Test App", version="1.0", notes="- Added a thing"):
             side_effect=_distinct_widget,
         ) as text_cls,
     ):
-
         window = PatchNotesWindow(
             parent=MagicMock(),
             title="What's New",
@@ -97,10 +96,7 @@ def test_heading_names_the_injected_app_name_and_version():
 
     built = _build_window(app_name="Fishbowl Widget Tool", version="9.9.9")
 
-    assert (
-        built.label_cls.call_args.kwargs["text"]
-        == "What's new in Fishbowl Widget Tool 9.9.9"
-    )
+    assert built.label_cls.call_args.kwargs["text"] == "What's new in Fishbowl Widget Tool 9.9.9"
 
 
 def test_notes_are_inserted_into_the_text_box():
@@ -111,9 +107,7 @@ def test_notes_are_inserted_into_the_text_box():
 
     built = _build_window(notes="- Fixed the second thing")
 
-    built.window.text_box.insert.assert_called_once_with(
-        tk.END, "- Fixed the second thing"
-    )
+    built.window.text_box.insert.assert_called_once_with(tk.END, "- Fixed the second thing")
 
 
 def test_text_box_is_disabled_after_the_notes_are_inserted():

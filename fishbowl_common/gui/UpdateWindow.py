@@ -1,10 +1,9 @@
 import tkinter as tk
 import webbrowser
-from typing import Callable
+from collections.abc import Callable
 
 from fishbowl_common.gui.color_theme import Theme
 from fishbowl_common.gui.ThemedSubwindow import ThemedSubwindow
-
 
 # Delay, in milliseconds, between opening the release page and closing the
 # application. The app must exit so the Windows installer can replace the running
@@ -36,7 +35,6 @@ PROGRESS_BAR_HEIGHT = 14
 # snapshots the active theme/font at open time and centers itself over the main
 # application window (both handled by ThemedSubwindow).
 class UpdateWindow(ThemedSubwindow):
-
     def __init__(
         self,
         parent: tk.Misc,
@@ -47,9 +45,7 @@ class UpdateWindow(ThemedSubwindow):
         theme: Theme,
         font_family: str,
         font_size: int,
-        start_install_callback: (
-            Callable[[Callable[[int, int], None], Callable[[bool], None]], None] | None
-        ) = None,
+        start_install_callback: (Callable[[Callable[[int, int], None], Callable[[bool], None]], None] | None) = None,
     ) -> None:
         """
         Initializes the UpdateWindow object
@@ -225,9 +221,7 @@ class UpdateWindow(ThemedSubwindow):
             )
 
         if self.info_label is not None:
-            self.info_label.config(
-                text=f"Downloading update… {int(fraction * 100)}%"
-            )
+            self.info_label.config(text=f"Downloading update… {int(fraction * 100)}%")
 
     def _on_install_finished(self, started: bool) -> None:
         """
@@ -248,9 +242,7 @@ class UpdateWindow(ThemedSubwindow):
                 self.info_label.config(text="Installing update…")
             self.after(INSTALL_CLOSE_DELAY_MS, self.close_app_callback)
         else:
-            self._send_to_release_page(
-                "Automatic update failed. Opening the release page…"
-            )
+            self._send_to_release_page("Automatic update failed. Opening the release page…")
 
     def _open_release_page(self) -> None:
         """
@@ -266,9 +258,7 @@ class UpdateWindow(ThemedSubwindow):
 
         self._send_to_release_page()
 
-    def _send_to_release_page(
-        self, message: str = "Closing to install update…"
-    ) -> None:
+    def _send_to_release_page(self, message: str = "Closing to install update…") -> None:
         """
         Sends the user to the release page and closes the application after a short
         delay.

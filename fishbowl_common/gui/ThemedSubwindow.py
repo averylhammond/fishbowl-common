@@ -13,7 +13,6 @@ from fishbowl_common.gui.color_theme import Theme
 # call _center_over_parent() once those widgets exist, so the window can be
 # sized and positioned over the parent.
 class ThemedSubwindow(tk.Toplevel):
-
     def __init__(
         self,
         parent: tk.Misc,
