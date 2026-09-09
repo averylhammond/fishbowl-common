@@ -46,9 +46,9 @@ half-empty wheel.
 
 ## 6. Write the tests
 
-Create `tests/test_<ClassName>.py` (or `tests/gui/test_<ClassName>.py`). **Open the reference
-implementation first** — `tests/test_UpdateCoordinator.py` for a class with injected
-collaborators, `tests/gui/test_UpdateWindow.py` for a window — and mirror it. Reading either one
+Create `tests/test_<module_name>.py` (or `tests/gui/test_<module_name>.py`). **Open the reference
+implementation first** — `tests/test_update_coordinator.py` for a class with injected
+collaborators, `tests/gui/test_update_window.py` for a window — and mirror it. Reading either one
 loads the full conventions from `.claude/rules/tests.md`. Coverage is at 100% on every measured
 module; a new module landing untested should fail the check.
 

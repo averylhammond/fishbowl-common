@@ -4,7 +4,7 @@ import pytest
 
 from fishbowl_common.gui.color_theme import DARK, LIGHT
 from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
-from fishbowl_common.gui.Tooltip import Tooltip
+from fishbowl_common.gui.tooltip import Tooltip
 
 
 @pytest.fixture
@@ -85,8 +85,8 @@ def test_schedule_show_cancels_existing_schedule(tooltip):
     tooltip.widget.after_cancel.assert_called_once_with("stale")
 
 
-@patch("fishbowl_common.gui.Tooltip.tk.Label")
-@patch("fishbowl_common.gui.Tooltip.tk.Toplevel")
+@patch("fishbowl_common.gui.tooltip.tk.Label")
+@patch("fishbowl_common.gui.tooltip.tk.Toplevel")
 def test_show_creates_positioned_popup(mock_toplevel, mock_label, tooltip):
     """
     Verifies that _show creates a borderless popup near the widget and fills it
@@ -111,7 +111,7 @@ def test_show_creates_positioned_popup(mock_toplevel, mock_label, tooltip):
     mock_label.return_value.pack.assert_called_once()
 
 
-@patch("fishbowl_common.gui.Tooltip.tk.Toplevel")
+@patch("fishbowl_common.gui.tooltip.tk.Toplevel")
 def test_show_does_nothing_when_already_shown(mock_toplevel, tooltip):
     """
     Verifies that _show does not create a second popup when one is already shown.
@@ -128,7 +128,7 @@ def test_show_does_nothing_when_already_shown(mock_toplevel, tooltip):
     mock_toplevel.assert_not_called()
 
 
-@patch("fishbowl_common.gui.Tooltip.tk.Toplevel")
+@patch("fishbowl_common.gui.tooltip.tk.Toplevel")
 def test_show_does_nothing_without_text(mock_toplevel, tooltip):
     """
     Verifies that _show does not create a popup when there is no tip text.

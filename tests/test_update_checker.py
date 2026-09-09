@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from fishbowl_common.UpdateChecker import (
+from fishbowl_common.update_checker import (
     CHECK_ERROR_HTTP,
     CHECK_ERROR_NETWORK,
     CHECK_ERROR_RATE_LIMITED,
@@ -120,7 +120,7 @@ def _result(latest_version: str = "3.2.0", **overrides):
     )
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_returns_result_when_newer_release_exists(mock_urlopen):
     """
     Verifies that a release newer than the running version yields a result flagged
@@ -140,7 +140,7 @@ def test_check_for_update_returns_result_when_newer_release_exists(mock_urlopen)
     assert result.release_url == "https://example.com/v3.2.0"
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_no_update_when_versions_equal(mock_urlopen):
     """
     Verifies that a release matching the running version is not flagged as an
@@ -158,7 +158,7 @@ def test_check_for_update_no_update_when_versions_equal(mock_urlopen):
     assert result.latest_version == "3.1.2"
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_no_update_when_release_is_older(mock_urlopen):
     """
     Verifies that a release older than the running version is not flagged as an
@@ -175,7 +175,7 @@ def test_check_for_update_no_update_when_release_is_older(mock_urlopen):
     assert result.update_available is False
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_normalizes_v_prefix_inconsistency(mock_urlopen):
     """
     Verifies that the comparison still works when the release tag carries a "v"
@@ -193,7 +193,7 @@ def test_check_for_update_normalizes_v_prefix_inconsistency(mock_urlopen):
     assert result.latest_version == "3.2.0"
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_compares_versions_semantically_not_lexically(mock_urlopen):
     """
     Verifies that versions are compared numerically, so "3.10.0" is treated as newer
@@ -210,7 +210,7 @@ def test_check_for_update_compares_versions_semantically_not_lexically(mock_urlo
     assert result.update_available is True
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_handles_a_pre_release_tag(mock_urlopen):
     """
     Verifies that a release tagged as a pre-release yields an ordinary result
@@ -230,7 +230,7 @@ def test_check_for_update_handles_a_pre_release_tag(mock_urlopen):
     assert result.update_available is True
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_no_update_when_the_release_omits_a_segment(mock_urlopen):
     """
     Verifies that a release written with fewer segments than the running version
@@ -248,7 +248,7 @@ def test_check_for_update_no_update_when_the_release_omits_a_segment(mock_urlope
     assert result.update_available is False
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_requests_latest_release_url_with_timeout(mock_urlopen):
     """
     Verifies that the check queries the repo's GitHub latest-release endpoint,
@@ -268,7 +268,7 @@ def test_check_for_update_requests_latest_release_url_with_timeout(mock_urlopen)
     assert mock_urlopen.call_args.kwargs == {"timeout": REQUEST_TIMEOUT_SECONDS}
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_identifies_itself_to_the_github_api(mock_urlopen):
     """
     Verifies that the request carries the headers GitHub's API expects: a User-Agent
@@ -291,7 +291,7 @@ def test_check_for_update_identifies_itself_to_the_github_api(mock_urlopen):
     assert sent["x-github-api-version"] == "2022-11-28"
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_returns_none_on_network_error(mock_urlopen):
     """
     Verifies that a network failure is swallowed and reported as None rather than
@@ -309,7 +309,7 @@ def test_check_for_update_returns_none_on_network_error(mock_urlopen):
     assert checker.last_error == CHECK_ERROR_NETWORK
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_returns_none_on_malformed_response(mock_urlopen):
     """
     Verifies that a response body that is not valid JSON is swallowed and reported
@@ -331,7 +331,7 @@ def test_check_for_update_returns_none_on_malformed_response(mock_urlopen):
     assert checker.last_error == CHECK_ERROR_RESPONSE
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_reports_an_exhausted_rate_limit(mock_urlopen):
     """
     Verifies that GitHub refusing the check because the hourly budget is spent is
@@ -351,7 +351,7 @@ def test_check_for_update_reports_an_exhausted_rate_limit(mock_urlopen):
     assert checker.last_error == CHECK_ERROR_RATE_LIMITED
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_reports_a_rate_limit_carrying_only_retry_after(mock_urlopen):
     """
     Verifies that a refusal telling the caller when to come back is read as a rate
@@ -370,7 +370,7 @@ def test_check_for_update_reports_a_rate_limit_carrying_only_retry_after(mock_ur
     assert checker.last_error == CHECK_ERROR_RATE_LIMITED
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_reports_too_many_requests_as_a_rate_limit(mock_urlopen):
     """
     Verifies that a 429 is read as a rate limit on the status alone, since it is
@@ -388,7 +388,7 @@ def test_check_for_update_reports_too_many_requests_as_a_rate_limit(mock_urlopen
     assert checker.last_error == CHECK_ERROR_RATE_LIMITED
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_reports_an_ordinary_refusal_as_an_http_failure(mock_urlopen):
     """
     Verifies that a 403 with requests still remaining and no retry advice is not
@@ -407,7 +407,7 @@ def test_check_for_update_reports_an_ordinary_refusal_as_an_http_failure(mock_ur
     assert checker.last_error == CHECK_ERROR_HTTP
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_reports_a_missing_release_as_an_http_failure(mock_urlopen):
     """
     Verifies that a repository publishing no releases (a 404) is reported as an HTTP
@@ -425,7 +425,7 @@ def test_check_for_update_reports_a_missing_release_as_an_http_failure(mock_urlo
     assert checker.last_error == CHECK_ERROR_HTTP
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_clears_the_error_once_a_check_succeeds(mock_urlopen):
     """
     Verifies that a successful check leaves no error behind, so a caller reusing a
@@ -447,7 +447,7 @@ def test_check_for_update_clears_the_error_once_a_check_succeeds(mock_urlopen):
     assert checker.last_error is None
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_surfaces_the_installer_and_checksums_assets(mock_urlopen):
     """
     Verifies that the release's installer (matched against the injected pattern) and
@@ -475,7 +475,7 @@ def test_check_for_update_surfaces_the_installer_and_checksums_assets(mock_urlop
     assert result.checksums_asset.name == DEFAULT_CHECKSUMS_NAME
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_matches_the_installer_by_glob_pattern(mock_urlopen):
     """
     Verifies that the asset pattern is matched with fnmatch rather than by equality,
@@ -493,7 +493,7 @@ def test_check_for_update_matches_the_installer_by_glob_pattern(mock_urlopen):
     assert result.installer_asset.name == "App-3.2.0_Setup.exe"
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_reports_no_installer_when_none_matches(mock_urlopen):
     """
     Verifies that a release publishing nothing that matches the pattern still yields
@@ -513,7 +513,7 @@ def test_check_for_update_reports_no_installer_when_none_matches(mock_urlopen):
     assert result.checksums_asset is not None
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_reports_no_installer_without_an_asset_pattern(mock_urlopen):
     """
     Verifies that a consumer injecting no asset pattern gets no installer asset,
@@ -532,7 +532,7 @@ def test_check_for_update_reports_no_installer_without_an_asset_pattern(mock_url
     assert result.installer_asset is None
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_reports_no_assets_when_the_release_lists_none(mock_urlopen):
     """
     Verifies that a response carrying no "assets" key at all is handled like a
@@ -551,7 +551,7 @@ def test_check_for_update_reports_no_assets_when_the_release_lists_none(mock_url
     assert result.checksums_asset is None
 
 
-@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")
+@patch("fishbowl_common.update_checker.urllib.request.urlopen")
 def test_check_for_update_finds_the_checksums_asset_by_injected_name(mock_urlopen):
     """
     Verifies that the checksums asset is looked up by the injected name, so a

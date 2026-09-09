@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from fishbowl_common.gui.color_theme import DARK
 from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
-from fishbowl_common.gui.PatchNotesWindow import PatchNotesWindow
+from fishbowl_common.gui.patch_notes_window import PatchNotesWindow
 
 
 def _distinct_widget(*_args, **_kwargs):
@@ -43,15 +43,15 @@ def _build_window(app_name="Test App", version="1.0", notes="- Added a thing"):
         patch.object(PatchNotesWindow, "configure"),
         patch.object(PatchNotesWindow, "_center_over_parent"),
         patch(
-            "fishbowl_common.gui.PatchNotesWindow.tk.Label",
+            "fishbowl_common.gui.patch_notes_window.tk.Label",
             side_effect=_distinct_widget,
         ) as label_cls,
         patch(
-            "fishbowl_common.gui.PatchNotesWindow.tk.Button",
+            "fishbowl_common.gui.patch_notes_window.tk.Button",
             side_effect=_distinct_widget,
         ) as button_cls,
         patch(
-            "fishbowl_common.gui.PatchNotesWindow.scrolledtext.ScrolledText",
+            "fishbowl_common.gui.patch_notes_window.scrolledtext.ScrolledText",
             side_effect=_distinct_widget,
         ) as text_cls,
     ):

@@ -13,6 +13,38 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
 
 ## [Unreleased]
 
+### Changed
+
+- Every module is now named in `snake_case` rather than after the class it holds, so the
+  package satisfies PEP 8 and ruff's `N999`. **Class names are unchanged**, and both
+  `__init__.py` files re-export exactly the names they did before, so an app importing
+  through the package roots — `from fishbowl_common import SettingsRepository`,
+  `from fishbowl_common.gui import ThemedSubwindow` — needs no change at all.
+
+  Only a direct module-path import or `unittest.mock.patch` target is affected. Neither
+  consuming app has one, but for anything that does, the fourteen renamed paths are:
+
+  | Was | Is |
+  | --- | --- |
+  | `fishbowl_common.ArgumentProvider` | `fishbowl_common.argument_provider` |
+  | `fishbowl_common.PatchNotes` | `fishbowl_common.patch_notes` |
+  | `fishbowl_common.SettingsRepository` | `fishbowl_common.settings_repository` |
+  | `fishbowl_common.UpdateChecker` | `fishbowl_common.update_checker` |
+  | `fishbowl_common.UpdateCoordinator` | `fishbowl_common.update_coordinator` |
+  | `fishbowl_common.UpdateDownloader` | `fishbowl_common.update_downloader` |
+  | `fishbowl_common.UpdateInstaller` | `fishbowl_common.update_installer` |
+  | `fishbowl_common.gui.AboutWindow` | `fishbowl_common.gui.about_window` |
+  | `fishbowl_common.gui.FileEditorWindow` | `fishbowl_common.gui.file_editor_window` |
+  | `fishbowl_common.gui.MessageWindow` | `fishbowl_common.gui.message_window` |
+  | `fishbowl_common.gui.PatchNotesWindow` | `fishbowl_common.gui.patch_notes_window` |
+  | `fishbowl_common.gui.ThemedSubwindow` | `fishbowl_common.gui.themed_subwindow` |
+  | `fishbowl_common.gui.Tooltip` | `fishbowl_common.gui.tooltip` |
+  | `fishbowl_common.gui.UpdateWindow` | `fishbowl_common.gui.update_window` |
+
+  `_version`, `version_utils`, `gui.color_theme` and `gui.font_settings` were already
+  compliant and are unchanged. This is an import-surface change, so the release carrying it
+  is a **minor** bump, not a patch.
+
 ## [1.5.0] - 2026-08-24
 
 ### Changed

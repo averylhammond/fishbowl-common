@@ -3,15 +3,15 @@ from collections.abc import Callable
 from functools import partial
 from typing import Protocol
 
-from fishbowl_common.UpdateChecker import (
+from fishbowl_common.update_checker import (
     CHECK_ERROR_HTTP,
     CHECK_ERROR_RATE_LIMITED,
     CHECK_ERROR_RESPONSE,
     UpdateChecker,
     UpdateCheckResult,
 )
-from fishbowl_common.UpdateDownloader import UpdateDownloader
-from fishbowl_common.UpdateInstaller import UpdateInstaller
+from fishbowl_common.update_downloader import UpdateDownloader
+from fishbowl_common.update_installer import UpdateInstaller
 
 # Reported to a caller's progress callback as (bytes received, bytes expected), and
 # to its completion callback as whether the installer actually started.

@@ -1,7 +1,7 @@
 ---
 paths:
-  - "fishbowl_common/Update*.py"
-  - "tests/test_Update*.py"
+  - "fishbowl_common/update_*.py"
+  - "tests/test_update_*.py"
 ---
 
 # The update flow
@@ -104,7 +104,7 @@ The whole update feature as one object, and the only one of these an app constru
   just because the machine is offline. This is a design decision, not an oversight — see the
   no-`report_error` rule below.
 
-## `UpdateDisplay` (also in `UpdateCoordinator.py`)
+## `UpdateDisplay` (also in `update_coordinator.py`)
 
 **This Protocol is what keeps the coordinator in the headless half** even though the object passed
 in is a Tk window; importing a concrete window class here would drag tkinter into

@@ -1,7 +1,7 @@
 ---
 paths:
-  - "fishbowl_common/SettingsRepository.py"
-  - "tests/test_SettingsRepository.py"
+  - "fishbowl_common/settings_repository.py"
+  - "tests/test_settings_repository.py"
 ---
 
 # `SettingsRepository`
@@ -34,12 +34,12 @@ as `(title, message)` from inside one `except` block per method, never re-raisin
   no-op default. The update classes deliberately have none; see
   `.claude/rules/update-classes.md`.
 
-## The two halves of `tests/test_SettingsRepository.py`
+## The two halves of `tests/test_settings_repository.py`
 
 This is the one file in the suite that mixes mocked and real database tests, and the split is
 deliberate (#11).
 
-- **The mocked half** patches `fishbowl_common.SettingsRepository.sqlite3.connect` and asserts the
+- **The mocked half** patches `fishbowl_common.settings_repository.sqlite3.connect` and asserts the
   SQL as literal strings. It covers what a real database will not readily produce: each `except`
   branch reporting through `report_error`, the `OSError` from `mkdir`, and `connection.close()`
   being called on every path including a failed write.

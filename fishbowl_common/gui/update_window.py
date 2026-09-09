@@ -3,7 +3,7 @@ import webbrowser
 from collections.abc import Callable
 
 from fishbowl_common.gui.color_theme import Theme
-from fishbowl_common.gui.ThemedSubwindow import ThemedSubwindow
+from fishbowl_common.gui.themed_subwindow import ThemedSubwindow
 
 # Delay, in milliseconds, between opening the release page and closing the
 # application. The app must exit so the Windows installer can replace the running

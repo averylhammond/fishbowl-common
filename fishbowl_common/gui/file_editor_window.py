@@ -5,7 +5,7 @@ from tkinter import scrolledtext
 
 from fishbowl_common.gui.color_theme import Theme
 from fishbowl_common.gui.font_settings import MONOSPACE_FONT_FAMILY
-from fishbowl_common.gui.ThemedSubwindow import ThemedSubwindow
+from fishbowl_common.gui.themed_subwindow import ThemedSubwindow
 
 
 # FileEditorWindow class to view or edit a single text file natively within the

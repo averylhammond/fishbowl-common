@@ -45,9 +45,9 @@ signature is not one PR but three** — here, then `FishbowlInvoiceTool`, then
 ## Common Commands
 
 - Run all unit tests: `pytest`
-- Run a single test file: `pytest tests/test_UpdateChecker.py`
+- Run a single test file: `pytest tests/test_update_checker.py`
 - Run a single test:
-  `pytest tests/test_UpdateChecker.py::test_check_for_update_returns_none_on_network_error`
+  `pytest tests/test_update_checker.py::test_check_for_update_returns_none_on_network_error`
 - Run with coverage: `pytest --cov=fishbowl_common --cov-report=term-missing`
 - Lint: `ruff check .` (add `--fix` to apply the safe fixes, `--statistics` for a summary)
 - Format: `ruff format .` (`--check` to verify without writing, as CI does)
@@ -65,24 +65,28 @@ does not pull in tkinter.
 
 ### Headless half — `fishbowl_common/`
 
+Modules are `snake_case` and each single-class module holds the `PascalCase` class of the
+same name — `settings_repository.py` holds `SettingsRepository`. `N999` enforces the
+filename half of that.
+
 | Module | Role |
 | --- | --- |
 | `_version` | One literal, `__version__`, re-exported from the package root. `pyproject.toml` reads it via `[tool.setuptools.dynamic]`, so the version lives in exactly one place. **Keep it to the bare assignment** — setuptools parses the module rather than importing it only while it stays that simple. |
-| `ArgumentProvider` | Parses `--integration-test` into `integration_test_mode` so an app can run headless with no GUI popups. Reads `sys.argv` directly and cannot yet be handed an `argv` (#8). |
-| `SettingsRepository` | SQLite key/value store for user settings. **Stores only text.** |
+| `argument_provider` | Parses `--integration-test` into `integration_test_mode` so an app can run headless with no GUI popups. Reads `sys.argv` directly and cannot yet be handed an `argv` (#8). |
+| `settings_repository` | SQLite key/value store for user settings. **Stores only text.** |
 | `version_utils` | `parse_version()` / `compare_versions()`, two module-level functions. **Neither ever raises.** |
-| `PatchNotes` | Reads a shipped changelog and returns every section in a version *range*, newest first. |
-| `UpdateChecker` | Queries the GitHub releases API; returns an `UpdateCheckResult` or `None`, and names the failure in `last_error`. |
-| `UpdateDownloader` | Streams an asset and verifies size + SHA-256 before the caller executes it; names the failure in `last_error`. |
-| `UpdateInstaller` | Starts a downloaded Inno Setup installer silently and detached (Windows only). |
-| `UpdateCoordinator` | The whole update feature as one object, and the only update class an app constructs. |
-| `UpdateDisplay` | A `typing.Protocol` (in `UpdateCoordinator.py`) — what keeps the coordinator headless. |
+| `patch_notes` | Reads a shipped changelog and returns every section in a version *range*, newest first. |
+| `update_checker` | Queries the GitHub releases API; returns an `UpdateCheckResult` or `None`, and names the failure in `last_error`. |
+| `update_downloader` | Streams an asset and verifies size + SHA-256 before the caller executes it; names the failure in `last_error`. |
+| `update_installer` | Starts a downloaded Inno Setup installer silently and detached (Windows only). |
+| `update_coordinator` | `UpdateCoordinator`, the whole update feature as one object and the only update class an app constructs. Also holds `UpdateDisplay`, a `typing.Protocol` — the one module here with a second public name, and what keeps the coordinator headless. |
 
 ### GUI half — `fishbowl_common/gui/`
 
-The themed tkinter layer both apps share: `color_theme`, `font_settings`, `ThemedSubwindow`,
-`MessageWindow`, `AboutWindow`, `FileEditorWindow`, `PatchNotesWindow`, `UpdateWindow`,
-`Tooltip`. Every window snapshots the active theme and font when it opens, so it stays styled
+The themed tkinter layer both apps share: `color_theme`, `font_settings`, `themed_subwindow`,
+`message_window`, `about_window`, `file_editor_window`, `patch_notes_window`,
+`update_window`, `tooltip` — each window module holding the `PascalCase` class of the same
+name. Every window snapshots the active theme and font when it opens, so it stays styled
 consistently with the main window behind it.
 
 ## Key conventions
@@ -139,6 +143,10 @@ consistently with the main window behind it.
   them; `[tool.ruff.lint.isort]` in `pyproject.toml` is the statement of intent, including that
   `fishbowl_common` is **first party** here — the inverse of both apps, where it is third party
   installed from a pinned git tag.
+- **Modules are `snake_case`; the classes inside them stay `PascalCase`.** `N999` enforces the
+  filename, so `SettingsRepository` lives in `fishbowl_common/settings_repository.py` and is
+  imported as `from fishbowl_common import SettingsRepository` — through the package root,
+  never the module path. `tests/` mirrors the module name. Both apps carry the same rule.
 - Keep comments concise: a comment should explain only what the immediately adjacent code does.
   Do not document another module's behavior from a call site.
 - **No banner comment blocks above a `def`.** The `###`-bordered headers naming each method were
@@ -148,7 +156,7 @@ consistently with the main window behind it.
 
 ## Unit Testing
 
-Tests live in `tests/`, mirroring the package: `tests/test_<ClassName>.py` per source module,
+Tests live in `tests/`, mirroring the package: `tests/test_<module_name>.py` per source module,
 and `tests/gui/` for `fishbowl_common/gui/`. `tests/__init__.py` and `tests/gui/__init__.py` are
 empty but load-bearing; there is deliberately **no `conftest.py`**.
 
@@ -159,8 +167,8 @@ SQL genuinely is the thing under test. See `.claude/rules/settings-repository.md
 as license for a second exception.
 
 **Before writing a test, open the reference implementation and mirror it** —
-`tests/test_UpdateCoordinator.py` for a class with injected collaborators,
-`tests/gui/test_UpdateWindow.py` for a window. Reading either loads the full conventions from
+`tests/test_update_coordinator.py` for a class with injected collaborators,
+`tests/gui/test_update_window.py` for a window. Reading either loads the full conventions from
 `.claude/rules/tests.md`.
 
 ## CI
@@ -197,12 +205,12 @@ when a matching file is opened, and in `.claude/skills/`, loaded when invoked.
 
 | File | Loads when you touch | Carries |
 | --- | --- | --- |
-| `rules/update-classes.md` | `Update*.py` | The `UpdateInstaller` switch rationale, the download verification contract, coordinator threading |
+| `rules/update-classes.md` | `update_*.py` | The `UpdateInstaller` switch rationale, the download verification contract, coordinator threading |
 | `rules/gui.md` | `gui/**` | Window catalogue, `Tooltip` `add="+"`, the widget-patching test stack |
 | `rules/tests.md` | `tests/**` | Fixtures, patch targets, FIRST, ordering and docstring conventions |
 | `rules/ci-and-packaging.md` | `.github/workflows/**`, `pyproject.toml` | Workflow internals, release gates, coverage gaps, the ruff config's divergences from the apps' |
-| `rules/versioning.md` | `version_utils.py`, `PatchNotes.py` | The never-raises contract, pre-release limitation, notes-range semantics |
-| `rules/settings-repository.md` | `SettingsRepository.py` | Text-only table, `report_error` mechanics, known defects |
+| `rules/versioning.md` | `version_utils.py`, `patch_notes.py` | The never-raises contract, pre-release limitation, notes-range semantics |
+| `rules/settings-repository.md` | `settings_repository.py` | Text-only table, `report_error` mechanics, known defects |
 | `/cut-a-release` | — | Bump, changelog, tag, and the two gates that fail a release |
 | `/move-the-pin` | — | The three-repo rollout for a public-signature change |
 | `/add-a-module` | — | Checklist for landing a new class or public name |

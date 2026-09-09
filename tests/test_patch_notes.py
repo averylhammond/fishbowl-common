@@ -1,7 +1,7 @@
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from fishbowl_common.PatchNotes import PatchNotes
+from fishbowl_common.patch_notes import PatchNotes
 
 # A notes file shaped like the one an application ships: a short preamble that
 # belongs to no version, then one section per release, newest first.

@@ -5,15 +5,15 @@ paths:
 
 # Unit testing conventions
 
-Tests live in `tests/`, mirroring the package: `tests/test_<ClassName>.py` per source module,
+Tests live in `tests/`, mirroring the package: `tests/test_<module_name>.py` per source module,
 and `tests/gui/` for `fishbowl_common/gui/`. `tests/__init__.py` and `tests/gui/__init__.py` are
 empty but **load-bearing** — with them present, pytest's prepend import mode puts the repo root
 on `sys.path`, which is what makes `from fishbowl_common import ...` resolve. There is
 deliberately **no `conftest.py`**; all pytest and coverage configuration lives in
 `pyproject.toml`.
 
-`tests/test_UpdateCoordinator.py` (a class with injected collaborators) and
-`tests/gui/test_UpdateWindow.py` (the richest widget-patching fixture) are the two reference
+`tests/test_update_coordinator.py` (a class with injected collaborators) and
+`tests/gui/test_update_window.py` (the richest widget-patching fixture) are the two reference
 implementations — mirror them rather than inventing new patterns.
 
 ## Test one object in isolation
@@ -30,8 +30,8 @@ this file.
   `_ASSET_URL`, `_PAYLOAD_SHA256 = hashlib.sha256(_PAYLOAD).hexdigest()` — rather than literals
   repeated per test.
 - **Patch at the point of use, with the fully-qualified target**:
-  `@patch("fishbowl_common.UpdateChecker.urllib.request.urlopen")`,
-  `patch("fishbowl_common.SettingsRepository.sqlite3.connect")` — never the definition site, and
+  `@patch("fishbowl_common.update_checker.urllib.request.urlopen")`,
+  `patch("fishbowl_common.settings_repository.sqlite3.connect")` — never the definition site, and
   never the whole module (`urllib`, `sqlite3`) when an `except` clause names an exception from it,
   since replacing the module makes that clause reference a non-exception and raise `TypeError`
   while handling the error.
@@ -50,14 +50,15 @@ this file.
 The generic principles are assumed. The three that constrain this suite specifically:
 
 - **Fast** — no real network or GUI, and no filesystem I/O beyond the `tmp_path` database in
-  `test_SettingsRepository.py`. The whole run stays under a second, and that is a budget, not an
+  `test_settings_repository.py`. The whole run stays under a second, and that is a budget, not an
   observation.
 - **Repeatable** — `git status` must show no new artifacts after a run.
 - **Timely** — a new branch or utility function gets its test in the same change.
 
 ## Naming and structure
 
-- Test files are named `test_<ClassName>.py`, matching pytest's default discovery.
+- Test files are named `test_<module_name>.py` — the module's own `snake_case` name, which
+  matches both pytest's default discovery and `N999`.
 - Flat module-level `test_<method>_<behavior>` functions — no test classes.
 - Keep the tests grouped by ordering alone: the fixtures first, then the helpers, then the tests
   for each method in the order the source module defines them. **No banner comment blocks** — the
@@ -72,7 +73,7 @@ The generic principles are assumed. The three that constrain this suite specific
 
 ## The one carve-out from "no real I/O"
 
-`tests/test_SettingsRepository.py` is the only file mixing mocked and real tests, and each half
+`tests/test_settings_repository.py` is the only file mixing mocked and real tests, and each half
 earns its place (#11):
 
 - the **mocked** tests (`settings_repo`, patching `sqlite3.connect`) cover the `report_error`

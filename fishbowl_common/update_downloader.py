@@ -7,7 +7,7 @@ from collections.abc import Callable
 from http.client import HTTPResponse
 from pathlib import Path
 
-from fishbowl_common.UpdateChecker import USER_AGENT
+from fishbowl_common.update_checker import USER_AGENT
 
 # Cap how long a download may block. It is far longer than the update check's
 # timeout because this transfers a whole installer rather than a JSON document, but

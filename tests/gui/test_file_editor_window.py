@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from fishbowl_common.gui.color_theme import DARK
-from fishbowl_common.gui.FileEditorWindow import FileEditorWindow
+from fishbowl_common.gui.file_editor_window import FileEditorWindow
 from fishbowl_common.gui.font_settings import DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE
 
 
@@ -53,15 +53,15 @@ def _build_window(
         patch.object(FileEditorWindow, "configure"),
         patch.object(FileEditorWindow, "_center_over_parent"),
         patch(
-            "fishbowl_common.gui.FileEditorWindow.tk.Frame",
+            "fishbowl_common.gui.file_editor_window.tk.Frame",
             side_effect=_distinct_widget,
         ),
         patch(
-            "fishbowl_common.gui.FileEditorWindow.tk.Button",
+            "fishbowl_common.gui.file_editor_window.tk.Button",
             side_effect=_distinct_widget,
         ),
         patch(
-            "fishbowl_common.gui.FileEditorWindow.scrolledtext.ScrolledText",
+            "fishbowl_common.gui.file_editor_window.scrolledtext.ScrolledText",
             side_effect=_distinct_widget,
         ) as text_cls,
     ):
@@ -161,15 +161,15 @@ def test_close_button_is_wired_to_destroy():
         patch.object(FileEditorWindow, "configure"),
         patch.object(FileEditorWindow, "_center_over_parent"),
         patch(
-            "fishbowl_common.gui.FileEditorWindow.tk.Frame",
+            "fishbowl_common.gui.file_editor_window.tk.Frame",
             side_effect=_distinct_widget,
         ),
         patch(
-            "fishbowl_common.gui.FileEditorWindow.tk.Button",
+            "fishbowl_common.gui.file_editor_window.tk.Button",
             side_effect=_distinct_widget,
         ) as mock_button,
         patch(
-            "fishbowl_common.gui.FileEditorWindow.scrolledtext.ScrolledText",
+            "fishbowl_common.gui.file_editor_window.scrolledtext.ScrolledText",
             side_effect=_distinct_widget,
         ),
     ):
