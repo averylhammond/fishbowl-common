@@ -13,6 +13,14 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
 
 ## [Unreleased]
 
+### Added
+
+- `open_in_file_explorer(path)`, exported from the headless `fishbowl_common` root, opens a
+  folder in the operating system's file explorer — `os.startfile` on Windows, `open` on macOS,
+  `xdg-open` elsewhere. It never raises: a missing folder, a path that is not a folder, or a
+  launcher that fails returns `False`, so the calling app decides what to tell the user. Added
+  for the apps' View-menu folder entries (FishbowlInventoryTool#60, FishbowlInvoiceTool#86).
+
 ### Changed
 
 - Every module is now named in `snake_case` rather than after the class it holds, so the

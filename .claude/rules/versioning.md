@@ -10,8 +10,8 @@ paths:
 
 ## `version_utils`
 
-Two module-level functions rather than a class, the only such module in the headless half. The
-three behaviors callers depend on:
+Two module-level functions rather than a class, the headless half's only such module besides
+`file_explorer`. The three behaviors callers depend on:
 
 - `parse_version()` stops at the first segment with no leading digits, **so a pre-release tag
   parses instead of raising**.
