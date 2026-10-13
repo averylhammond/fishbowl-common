@@ -13,6 +13,8 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-13
+
 ### Added
 
 - `open_in_file_explorer(path)`, exported from the headless `fishbowl_common` root, opens a
