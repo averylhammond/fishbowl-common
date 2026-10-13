@@ -13,6 +13,16 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
 
 ## [Unreleased]
 
+### Added
+
+- `open_with_default_app(path)`, exported from the headless `fishbowl_common` root beside
+  `open_in_file_explorer()`, opens a file in the application the operating system associates
+  with its type — `os.startfile` on Windows, `open` on macOS, `xdg-open` elsewhere. Like its
+  sibling it never raises: a missing file, a path that is not a file, or a launcher that fails
+  returns `False`. The two functions now share one platform switch, and
+  `open_in_file_explorer()` behaves exactly as before. Added for FishbowlInventoryTool#60's
+  View -> Spreadsheets, which opens the workbook the user picks.
+
 ## [1.6.0] - 2026-10-13
 
 ### Added

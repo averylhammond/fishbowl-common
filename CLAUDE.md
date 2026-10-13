@@ -73,7 +73,7 @@ filename half of that.
 | --- | --- |
 | `_version` | One literal, `__version__`, re-exported from the package root. `pyproject.toml` reads it via `[tool.setuptools.dynamic]`, so the version lives in exactly one place. **Keep it to the bare assignment** — setuptools parses the module rather than importing it only while it stays that simple. |
 | `argument_provider` | Parses `--integration-test` into `integration_test_mode` so an app can run headless with no GUI popups. Reads `sys.argv` directly and cannot yet be handed an `argv` (#8). |
-| `file_explorer` | `open_in_file_explorer()`, one module-level function: opens a folder in the OS file explorer (`os.startfile` / `open` / `xdg-open`). **Never raises** — a missing folder, a non-folder or a launcher failure returns `False`, and the caller tells the user. |
+| `file_explorer` | `open_in_file_explorer()` and `open_with_default_app()`, two module-level functions sharing one platform switch (`os.startfile` / `open` / `xdg-open`): the first opens a folder in the OS file explorer, the second opens a file in its default application. **Neither ever raises** — a missing path, the wrong kind of path or a launcher failure returns `False`, and the caller tells the user. |
 | `settings_repository` | SQLite key/value store for user settings. **Stores only text.** |
 | `version_utils` | `parse_version()` / `compare_versions()`, two module-level functions. **Neither ever raises.** |
 | `patch_notes` | Reads a shipped changelog and returns every section in a version *range*, newest first. |
@@ -108,8 +108,8 @@ consistently with the main window behind it.
 - **`report_error` is the callback pattern for a failure the user should see.**
   `report_error: Callable[[str, str], None] = lambda *_: None`, invoked as `(title, message)`,
   never re-raising. `SettingsRepository` is the only class carrying one today. **The update
-  classes, `PatchNotes` and `open_in_file_explorer()` deliberately have none** — they return
-  `None`/`False`/`""` silently, and a silent startup check on an offline machine is the
+  classes, `PatchNotes` and the two `file_explorer` functions deliberately have none** — they
+  return `None`/`False`/`""` silently, and a silent startup check on an offline machine is the
   designed behavior, not an oversight.
   `UpdateChecker.last_error` is not a hole in that rule: it *records* why the last check failed
   for a caller that asks, and reports nothing to anyone on its own.
