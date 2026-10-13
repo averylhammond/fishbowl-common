@@ -28,10 +28,15 @@ def open_in_file_explorer(path: Path) -> bool:
         return False
 
     try:
+        # Windows (sys.platform is "win32" on 64-bit Windows too): hand the folder
+        # to File Explorer through the shell's default action
         if sys.platform == "win32":
             os.startfile(folder)
+        # macOS: the `open` command shows the folder in Finder
         elif sys.platform == "darwin":
             subprocess.Popen(["open", str(folder)])
+        # Linux and any other Unix-like OS: xdg-open asks the desktop environment
+        # for its default file manager
         else:
             subprocess.Popen(["xdg-open", str(folder)])
     except OSError:
