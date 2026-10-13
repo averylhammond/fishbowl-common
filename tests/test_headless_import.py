@@ -65,9 +65,10 @@ def test_top_level_package_imports_without_tkinter():
     assert module.UpdateDownloader is not None
     assert module.UpdateInstaller is not None
 
-    # Opening a folder shells out to the platform's launcher and needs no window,
-    # so an app can offer it without the GUI half
+    # Opening a folder or file shells out to the platform's launcher and needs no
+    # window, so an app can offer it without the GUI half
     assert module.open_in_file_explorer is not None
+    assert module.open_with_default_app is not None
 
     # UpdateCoordinator drives a GUI window but is typed against a Protocol, so
     # it belongs to this half of the package rather than the tkinter half

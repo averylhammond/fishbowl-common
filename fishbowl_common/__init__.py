@@ -1,6 +1,6 @@
 from fishbowl_common._version import __version__
 from fishbowl_common.argument_provider import ArgumentProvider
-from fishbowl_common.file_explorer import open_in_file_explorer
+from fishbowl_common.file_explorer import open_in_file_explorer, open_with_default_app
 from fishbowl_common.patch_notes import PatchNotes
 from fishbowl_common.settings_repository import SettingsRepository
 from fishbowl_common.update_checker import (
@@ -49,5 +49,6 @@ __all__ = [
     "__version__",
     "compare_versions",
     "open_in_file_explorer",
+    "open_with_default_app",
     "parse_version",
 ]
