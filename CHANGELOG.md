@@ -13,6 +13,8 @@ workflow refuses to publish a tag with no matching `## [X.Y.Z]` heading in this 
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-13
+
 ### Added
 
 - `open_with_default_app(path)`, exported from the headless `fishbowl_common` root beside
